@@ -1,10 +1,13 @@
 <template>
   <div class="base-card">
     <header>
-      <slot name="header"></slot>
+      <slot name="header">아무말</slot>
     </header>
     <main>
-      <slot></slot>
+      <slot name="maintest">대잔치</slot>
+    </main>
+    <main>
+      <slot name="maintest2">대잔치와신난다</slot>
     </main>
   </div>
 </template>

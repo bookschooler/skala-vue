@@ -14,7 +14,7 @@ const logWeather = ref('대기 중...')
 
 // 🟢 1) 기본형 배열의 0번째 요소(글자) 감시하기
 watch(
-  () => teamMembers.value[0],
+  () => teamMembers.value[1],
   (newNames, oldNames) => {
     logMember.value = `[방출/영입] 0번 선수 교체: ${oldNames} ➡️ ${newNames}`
   },

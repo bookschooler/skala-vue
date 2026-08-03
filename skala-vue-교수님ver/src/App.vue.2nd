@@ -6,7 +6,7 @@ import ReactiveReactive from './components/practices/composition/ReactiveReactiv
 import ComputedBasic from './components/practices/composition/ComputedBasic.vue'
 import WatchersBasic from './components/practices/composition/WatchersBasic.vue'
 import WatchersMulti from './components/practices/composition/WatchersMulti.vue'
-import WatchersDeep from './components/practices/composition/WatchersDeep.vue'
+import WatchersDeep from './components/practices/composi겨ㅜtion/WatchersDeep.vue'
 import WatchersReactive from './components/practices/composition/WatchersReactive.vue'
 import WatchersRefArray from './components/practices/composition/WatchersRefArray.vue'
 import WatchersReactiveArray from './components/practices/composition/WatchersReactiveArray.vue'
