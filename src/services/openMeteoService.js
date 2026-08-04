@@ -1,0 +1,117 @@
+import axios from 'axios'
+
+// Open-Meteo는 전체 장기 예보 화면만 담당한다. 검색·현재 날씨·상세 예보는
+// openWeatherService.js에서 OpenWeatherMap으로 요청한다.
+const forecastClient = axios.create({
+  baseURL: 'https://api.open-meteo.com/v1',
+  timeout: 10000,
+})
+
+const weatherCodeText = Object.freeze({
+  0: '맑음',
+  1: '대체로 맑음',
+  2: '구름 조금',
+  3: '흐림',
+  45: '안개',
+  48: '서리 안개',
+  51: '이슬비',
+  53: '이슬비',
+  55: '강한 이슬비',
+  56: '어는 이슬비',
+  57: '강한 어는 이슬비',
+  61: '비',
+  63: '비',
+  65: '강한 비',
+  66: '어는 비',
+  67: '강한 어는 비',
+  71: '눈',
+  73: '눈',
+  75: '강한 눈',
+  77: '싸락눈',
+  80: '소나기',
+  81: '소나기',
+  82: '강한 소나기',
+  85: '눈 소나기',
+  86: '강한 눈 소나기',
+  95: '뇌우',
+  96: '우박 뇌우',
+  99: '강한 우박 뇌우',
+})
+
+const isFiniteNumber = (value) => value !== null && value !== '' && Number.isFinite(Number(value))
+
+const assertCoordinates = (city) => {
+  if (!city || !isFiniteNumber(city.lat) || !isFiniteNumber(city.lon)) {
+    throw new Error('도시의 좌표 정보가 올바르지 않습니다.')
+  }
+}
+
+const weatherLabel = (code) => weatherCodeText[code] ?? '날씨 정보 없음'
+
+const normalizeHourly = (hourly = {}) => {
+  const time = Array.isArray(hourly.time) ? hourly.time : []
+  return time.map((dateTime, index) => ({
+    dateTime,
+    temp: Number(hourly.temperature_2m?.[index]),
+    feelsLike: Number(hourly.apparent_temperature?.[index]),
+    precipitationProbability: Number(hourly.precipitation_probability?.[index] ?? 0),
+    precipitation: Number(hourly.precipitation?.[index] ?? 0),
+    wind: Number(hourly.wind_speed_10m?.[index]),
+    uvIndex: Number(hourly.uv_index?.[index] ?? 0),
+    weatherCode: Number(hourly.weather_code?.[index]),
+    status: weatherLabel(Number(hourly.weather_code?.[index])),
+  }))
+}
+
+const normalizeDaily = (daily = {}) => {
+  const time = Array.isArray(daily.time) ? daily.time : []
+  return time.flatMap((date, index) => {
+    const minTemp = daily.temperature_2m_min?.[index]
+    const maxTemp = daily.temperature_2m_max?.[index]
+    const weatherCode = daily.weather_code?.[index]
+    if (![minTemp, maxTemp, weatherCode].every(isFiniteNumber)) return []
+
+    return [{
+      date,
+      minTemp: Number(minTemp),
+      maxTemp: Number(maxTemp),
+      precipitationProbability: isFiniteNumber(daily.precipitation_probability_max?.[index])
+        ? Number(daily.precipitation_probability_max[index])
+        : 0,
+      weatherCode: Number(weatherCode),
+      status: weatherLabel(Number(weatherCode)),
+      sunrise: daily.sunrise?.[index] ?? null,
+      sunset: daily.sunset?.[index] ?? null,
+      uvIndexMax: isFiniteNumber(daily.uv_index_max?.[index]) ? Number(daily.uv_index_max[index]) : null,
+    }]
+  })
+}
+
+export const fetchLongRangeForecast = async (city, { signal } = {}) => {
+  assertCoordinates(city)
+  const { data } = await forecastClient.get('/forecast', {
+    params: {
+      latitude: city.lat,
+      longitude: city.lon,
+      timezone: 'auto',
+      hourly:
+        'temperature_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,wind_speed_10m,uv_index',
+      daily:
+        'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset,uv_index_max',
+      forecast_days: 16,
+    },
+    signal,
+  })
+  const hourly = normalizeHourly(data?.hourly)
+  const daily = normalizeDaily(data?.daily)
+  if (!hourly.length || !daily.length) throw new Error('Open-Meteo 장기 예보 응답 형식이 올바르지 않습니다.')
+
+  return {
+    city: { ...city, timezone: data?.timezone ?? city.timezone },
+    hourly,
+    daily,
+    fetchedAt: new Date().toISOString(),
+  }
+}
+
+export const isMeteoRequestCanceled = (error) => axios.isCancel(error) || error?.code === 'ERR_CANCELED'
