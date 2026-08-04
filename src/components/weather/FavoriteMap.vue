@@ -184,6 +184,7 @@ const pinLabel = (city) => `${city.name} ${city.condition} ${displayPinTemperatu
 
 @media (max-width: 700px) {
   .favorite-map {
+    width: 100%;
     height: auto;
     min-height: 320px;
     aspect-ratio: 1.4 / 1;
