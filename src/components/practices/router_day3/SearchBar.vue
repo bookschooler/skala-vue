@@ -7,13 +7,14 @@ const emit = defineEmits(['update-query'])
   <div class="search-bar">
     <h2>🔍 도시 검색</h2>
     <label for="city-search" class="sr-only">검색할 도시 이름</label>
-    <input
+    <el-input
       id="city-search"
       type="search"
       :value="currentQuery"
       placeholder="검색할 도시 이름 입력"
       autocomplete="off"
-      @input="emit('update-query', $event.target.value)"
+      clearable
+      @input="emit('update-query', $event)"
     />
     <p>
       검색 중인 도시: <strong>{{ currentQuery || '전체' }}</strong>
@@ -26,7 +27,7 @@ const emit = defineEmits(['update-query'])
   margin: 0 0 13px;
   font-size: 17px;
 }
-.search-bar input {
+.search-bar :deep(.el-input__wrapper) {
   width: 100%;
   padding: 13px 15px;
   color: #24344a;
@@ -35,7 +36,7 @@ const emit = defineEmits(['update-query'])
   border-radius: 10px;
   font-size: 15px;
 }
-.search-bar input:focus {
+.search-bar :deep(.el-input__wrapper.is-focus) {
   border-color: #6289e8;
   outline: none;
   box-shadow: 0 0 0 4px rgba(98, 137, 232, 0.14);

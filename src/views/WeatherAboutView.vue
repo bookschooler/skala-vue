@@ -1,5 +1,6 @@
 <script setup>
 import { RouterLink } from 'vue-router'
+import BuildEnvironmentInfo from '../components/practices/build_day4/BuildEnvironmentInfo.vue'
 </script>
 
 <template>
@@ -17,6 +18,7 @@ import { RouterLink } from 'vue-router'
         <li>정적 호스팅 새로고침을 지원하는 Hash 라우팅</li>
       </ul>
       <RouterLink class="home-link" to="/">날씨 대시보드 보기</RouterLink>
+      <BuildEnvironmentInfo />
     </section>
   </main>
 </template>

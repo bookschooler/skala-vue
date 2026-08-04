@@ -1,29 +1,103 @@
 <script setup>
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
-import { findCityById } from '../data/cityCatalog.js'
 import {
-  fetchCurrentWeather,
-  isWeatherRequestCanceled,
-  WeatherConfigError,
-} from '../services/openWeatherService.js'
+  ArrowLeft,
+  Cloudy,
+  Filter,
+  Odometer,
+  Star,
+  StarFilled,
+  Sunny,
+  Umbrella,
+  WindPower,
+} from '@element-plus/icons-vue'
+import { findCityById } from '../data/cityCatalog.js'
+import { fetchWeatherBundle, isWeatherRequestCanceled } from '../services/openWeatherService.js'
 import { useConfigStore } from '../stores/configStore.js'
+import { useFavoriteStore } from '../stores/favoriteStore.js'
+import { getWeatherVisual } from '../utils/weatherVisual.js'
 
 const route = useRoute()
 const configStore = useConfigStore()
-const selectedWeather = ref(null)
+const favoriteStore = useFavoriteStore()
+const weatherBundle = ref(null)
 const isLoading = ref(false)
 const errorMessage = ref('')
 const isNotFound = ref(false)
 let activeController
 let requestId = 0
 
-const loadWeather = async (cityId = route.params.cityId) => {
+const queryCity = computed(() => {
+  const lat = Number(route.query.lat)
+  const lon = Number(route.query.lon)
+  if (!route.query.name || !Number.isFinite(lat) || !Number.isFinite(lon)) return null
+  return {
+    id: route.params.cityId,
+    name: route.query.name,
+    country: route.query.country ?? '국가 정보 없음',
+    countryCode: route.query.countryCode ?? '',
+    lat,
+    lon,
+    timezone: route.query.timezone ?? 'auto',
+    query: route.query.name,
+  }
+})
+
+const resolvedCity = computed(
+  () => queryCity.value ?? favoriteStore.findFavorite(route.params.cityId) ?? findCityById(route.params.cityId),
+)
+const currentWeather = computed(() => weatherBundle.value?.current ?? null)
+const isFavorite = computed(() => favoriteStore.isFavorite(resolvedCity.value?.id))
+const weatherVisual = (weatherCode) => getWeatherVisual(weatherCode)
+
+const displayTemp = (temp) => {
+  if (!Number.isFinite(Number(temp))) return '—'
+  const value =
+    configStore.unit === 'fahrenheit'
+      ? Math.round((Number(temp) * 9) / 5 + 32)
+      : Math.round(Number(temp))
+  return `${value}${configStore.unitSymbol}`
+}
+
+const displayParticulate = (value) =>
+  value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value))
+    ? `${Math.round(Number(value))} μg/m³`
+    : '—'
+
+const displayUv = (value) =>
+  value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value))
+    ? Number(value).toFixed(1).replace(/\.0$/, '')
+    : '—'
+
+const forecastRoute = computed(() => {
+  const city = weatherBundle.value?.city ?? resolvedCity.value
+  if (!city) return { name: 'WeatherForecast' }
+  return {
+    name: 'WeatherForecast',
+    query: {
+      cityId: city.id,
+      name: city.name,
+      country: city.country,
+      countryCode: city.countryCode,
+      lat: String(city.lat),
+      lon: String(city.lon),
+      timezone: city.timezone,
+    },
+  }
+})
+
+const formatDate = (date) =>
+  new Intl.DateTimeFormat('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' }).format(
+    new Date(`${date}T12:00:00`),
+  )
+
+const loadWeather = async () => {
   activeController?.abort()
   const currentRequestId = ++requestId
-  selectedWeather.value = null
+  weatherBundle.value = null
   errorMessage.value = ''
-  const city = findCityById(cityId)
+  const city = resolvedCity.value
   isNotFound.value = !city
   if (!city) {
     isLoading.value = false
@@ -33,30 +107,29 @@ const loadWeather = async (cityId = route.params.cityId) => {
   activeController = new AbortController()
   isLoading.value = true
   try {
-    const weather = await fetchCurrentWeather(city, { signal: activeController.signal })
-    if (currentRequestId === requestId) selectedWeather.value = weather
+    const result = await fetchWeatherBundle(city, { signal: activeController.signal })
+    if (currentRequestId === requestId) weatherBundle.value = result
   } catch (error) {
     if (currentRequestId !== requestId || isWeatherRequestCanceled(error)) return
-    console.error('상세 날씨 정보를 불러오는 중 오류가 발생했습니다.', error.name)
-    errorMessage.value =
-      error instanceof WeatherConfigError
-        ? 'API 키가 없습니다. .env.local 파일에 VITE_OPENWEATHER_API_KEY를 설정해 주세요.'
-        : '날씨 정보를 불러오지 못했습니다.'
+    errorMessage.value = '날씨 정보를 불러오지 못했습니다. 네트워크 연결을 확인한 뒤 다시 시도해 주세요.'
   } finally {
     if (currentRequestId === requestId) isLoading.value = false
   }
 }
-const displayTemp = computed(() => {
-  if (!selectedWeather.value) return null
 
-  const rawTemp = selectedWeather.value.temp
-  return configStore.unit === 'fahrenheit' ? Math.round((rawTemp * 9) / 5 + 32) : rawTemp
-})
+const toggleFavorite = () => {
+  const result = favoriteStore.toggleFavorite(resolvedCity.value)
+  if (!result.ok && result.reason === 'limit') {
+    errorMessage.value = `즐겨찾기는 최대 ${favoriteStore.maxFavorites}개까지 저장할 수 있어요.`
+  }
+}
+
 watch(
-  () => route.params.cityId,
-  (cityId) => loadWeather(cityId),
+  () => [route.params.cityId, route.query.lat, route.query.lon, route.query.name],
+  loadWeather,
   { immediate: true },
 )
+
 onBeforeUnmount(() => {
   requestId += 1
   activeController?.abort()
@@ -65,153 +138,217 @@ onBeforeUnmount(() => {
 
 <template>
   <main class="detail-page">
-    <section v-if="isLoading" class="detail-card empty" role="status">
-      <p class="empty-icon">⏳</p>
-      <h1>날씨 정보를 불러오는 중입니다</h1>
-    </section>
-    <section v-else-if="errorMessage" class="detail-card empty" role="alert">
-      <p class="empty-icon">⚠️</p>
-      <h1>날씨 정보를 불러오지 못했습니다</h1>
-      <p>{{ errorMessage }}</p>
-      <button type="button" class="retry-button" :disabled="isLoading" @click="loadWeather()">
-        다시 시도
-      </button>
-      <RouterLink class="home-link secondary" to="/">메인 대시보드로 돌아가기</RouterLink>
-    </section>
-    <section v-else-if="selectedWeather" class="detail-card">
-      <p class="eyebrow">WEATHER DETAIL</p>
-      <h1>{{ selectedWeather.name }} 상세 날씨</h1>
-      <p class="summary">{{ selectedWeather.description }}</p>
-      <dl class="weather-grid">
+    <RouterLink class="back-link" to="/"><el-icon><ArrowLeft /></el-icon> 홈으로</RouterLink>
+
+    <el-card v-if="isLoading" class="detail-card empty" shadow="never" role="status">
+      <el-skeleton :rows="7" animated />
+    </el-card>
+
+    <el-card v-else-if="errorMessage" class="detail-card empty" shadow="never" role="alert">
+      <el-alert :title="errorMessage" type="error" show-icon :closable="false" />
+      <el-button type="primary" :disabled="isLoading" @click="loadWeather">다시 시도</el-button>
+    </el-card>
+
+    <el-card v-else-if="currentWeather" class="detail-card" shadow="never">
+      <header class="detail-header">
         <div>
-          <dt>현재 기온</dt>
-          <dd>{{ displayTemp }}{{ configStore.unitSymbol }}</dd>
+          <p class="eyebrow">WEATHER DETAIL</p>
+          <h1>{{ weatherBundle.city.name }} <small>{{ weatherBundle.city.country }}</small></h1>
+          <p class="summary">{{ currentWeather.observedAt }} 기준 · {{ currentWeather.status }}</p>
         </div>
-        <div>
-          <dt>기상 상태</dt>
-          <dd>{{ selectedWeather.status }}</dd>
+        <div class="detail-actions">
+          <button
+            class="unit-button"
+            type="button"
+            :aria-label="`온도 단위를 ${configStore.unit === 'celsius' ? '화씨' : '섭씨'}로 변경`"
+            @click="configStore.toggleUnit"
+          >
+            °{{ configStore.unit === 'celsius' ? 'C' : 'F' }}
+          </button>
+          <button class="favorite-button" type="button" @click="toggleFavorite">
+            <el-icon><component :is="isFavorite ? StarFilled : Star" /></el-icon>
+            {{ isFavorite ? '저장됨' : '즐겨찾기' }}
+          </button>
         </div>
-        <div>
-          <dt>습도</dt>
-          <dd>{{ selectedWeather.humidity }}%</dd>
+      </header>
+
+      <section class="current-weather" aria-label="현재 날씨">
+        <div class="current-weather__hero">
+          <el-icon :class="['current-weather__icon', `current-weather__icon--${weatherVisual(currentWeather.weatherCode).tone}`]">
+            <component :is="weatherVisual(currentWeather.weatherCode).icon" />
+          </el-icon>
+          <div>
+            <strong>{{ displayTemp(currentWeather.temp) }}</strong>
+            <p>{{ currentWeather.status }}</p>
+          </div>
         </div>
-        <div>
-          <dt>풍속</dt>
-          <dd>{{ selectedWeather.wind }} m/s</dd>
+        <dl class="weather-grid">
+          <div>
+            <dt><el-icon><Odometer /></el-icon> 체감온도</dt>
+            <dd>{{ displayTemp(currentWeather.feelsLike) }}</dd>
+          </div>
+          <div>
+            <dt><el-icon><Cloudy /></el-icon> 습도</dt>
+            <dd>{{ currentWeather.humidity }}%</dd>
+          </div>
+          <div>
+            <dt><el-icon><WindPower /></el-icon> 풍속</dt>
+            <dd>{{ currentWeather.wind }} km/h</dd>
+          </div>
+          <div>
+            <dt><el-icon><Umbrella /></el-icon> 강수량</dt>
+            <dd>{{ currentWeather.precipitation }} mm</dd>
+          </div>
+          <div>
+            <dt><el-icon><Filter /></el-icon> 미세먼지</dt>
+            <dd>{{ displayParticulate(currentWeather.airQuality?.pm10) }}</dd>
+          </div>
+          <div>
+            <dt><el-icon><Sunny /></el-icon> 자외선 지수</dt>
+            <dd>{{ displayUv(currentWeather.airQuality?.uvIndex) }}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="daily-forecast" aria-label="5일 예보">
+        <div class="section-heading"><h2>5일 예보</h2><RouterLink :to="forecastRoute">16일 전체 예보 보기</RouterLink></div>
+        <div class="daily-grid">
+          <article v-for="forecast in weatherBundle.daily.slice(0, 5)" :key="forecast.date">
+            <p>{{ formatDate(forecast.date) }}</p>
+            <div class="daily-card__condition">
+              <el-icon :class="['daily-card__weather-icon', `daily-card__weather-icon--${weatherVisual(forecast.weatherCode).tone}`]">
+                <component :is="weatherVisual(forecast.weatherCode).icon" />
+              </el-icon>
+              <strong>{{ forecast.status }}</strong>
+            </div>
+            <span>{{ displayTemp(forecast.minTemp) }} / {{ displayTemp(forecast.maxTemp) }}</span>
+            <div class="daily-card__metrics">
+              <small><el-icon><Umbrella /></el-icon> {{ forecast.precipitationProbability }}%</small>
+              <small><el-icon><Sunny /></el-icon> UV {{ displayUv(forecast.uvIndexMax) }}</small>
+            </div>
+          </article>
         </div>
-      </dl>
-      <RouterLink class="home-link" to="/">← 메인 대시보드로</RouterLink>
-    </section>
-    <section v-else-if="isNotFound" class="detail-card empty" role="status">
-      <p class="empty-icon">🌫️</p>
-      <h1>도시 정보를 찾을 수 없습니다</h1>
-      <p>요청한 도시 ID({{ route.params.cityId }})에 해당하는 날씨 데이터가 없습니다.</p>
-      <RouterLink class="home-link" to="/">메인 대시보드로 돌아가기</RouterLink>
-    </section>
+      </section>
+    </el-card>
+
+    <el-card v-else-if="isNotFound" class="detail-card empty" shadow="never" role="status">
+      <el-empty description="도시 정보를 찾을 수 없습니다.">
+        <RouterLink to="/"><el-button type="primary">홈으로 돌아가기</el-button></RouterLink>
+      </el-empty>
+    </el-card>
   </main>
 </template>
 
 <style scoped>
 .detail-page {
-  width: min(760px, calc(100% - 32px));
-  margin: 52px auto;
+  width: min(1020px, calc(100% - 32px));
+  min-height: 100vh;
+  padding: 42px 0 70px;
+  margin: 0 auto;
+  color: #e8f6ff;
 }
-.detail-card {
-  padding: 42px;
-  color: #1f2f46;
-  background: #fff;
-  border: 1px solid #e3eaf3;
-  border-radius: 24px;
-  box-shadow: 0 24px 70px rgba(42, 62, 92, 0.13);
-}
-.eyebrow {
-  margin: 0;
-  color: #4b78e6;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 1.8px;
-}
-h1 {
-  margin: 8px 0 10px;
-  font-size: 30px;
-}
-.summary {
-  margin: 0 0 28px;
-  color: #68768a;
-}
-.weather-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 14px;
-  margin: 0 0 30px;
-}
-.weather-grid div {
-  padding: 20px;
-  background: #f5f8fc;
-  border: 1px solid #e4eaf2;
-  border-radius: 14px;
-}
-dt {
-  margin-bottom: 8px;
-  color: #748197;
-  font-size: 13px;
-}
-dd {
-  margin: 0;
-  color: #27405f;
-  font-size: 22px;
-  font-weight: 800;
-}
-.home-link {
-  display: inline-block;
-  padding: 11px 16px;
-  color: #fff;
-  background: #4f77d9;
-  border-radius: 10px;
-  font-weight: 700;
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 18px;
+  color: #a8d9f2;
+  font-size: 14px;
   text-decoration: none;
 }
-.retry-button {
-  margin-right: 8px;
-  padding: 11px 16px;
-  color: #fff;
-  background: #c8434b;
-  border: 0;
-  border-radius: 10px;
-  font-weight: 700;
+.detail-card {
+  padding: 36px;
+  color: #e8f6ff;
+  background: #06101e;
+  border: 1px solid #205273;
+  border-radius: 18px;
+  box-shadow: 0 0 32px rgba(0, 142, 230, 0.12);
+}
+.detail-card :deep(.el-card__body) { padding: 0; }
+.detail-card.empty { text-align: center; }
+.empty :deep(.el-button) { margin-top: 18px; }
+.detail-header,
+.section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+.detail-actions { display: flex; align-items: center; gap: 8px; }
+.unit-button {
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0 10px;
+  color: #9eeaff;
+  background: #061a2b;
+  border: 1px solid #3fb6e5;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+}
+.eyebrow { margin: 0; color: #7fd6ff; font-size: 11px; font-weight: 800; letter-spacing: 0.14em; }
+h1 { margin: 7px 0; font-size: clamp(28px, 4vw, 42px); }
+h1 small { color: #9fb6c6; font-size: 15px; font-weight: 500; }
+.summary { margin: 0; color: #8faabc; font-size: 13px; }
+.favorite-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 0 13px;
+  color: #dfcaff;
+  background: #120d28;
+  border: 1px solid #8c5bff;
+  border-radius: 8px;
   cursor: pointer;
 }
-.home-link.secondary {
-  color: #3c5474;
-  background: #edf2f8;
-}
-.home-link:focus-visible {
-  outline: 3px solid rgba(74, 119, 226, 0.35);
-  outline-offset: 3px;
-}
-.empty {
-  text-align: center;
-}
-.empty-icon {
-  margin: 0;
-  font-size: 48px;
-}
-.empty p:not(.empty-icon) {
-  color: #68768a;
-}
-@media (max-width: 560px) {
-  .detail-page {
-    width: calc(100% - 20px);
-    margin: 20px auto;
-  }
-  .detail-card {
-    padding: 24px 18px;
-  }
-  .weather-grid {
-    grid-template-columns: 1fr;
-  }
-  h1 {
-    font-size: 25px;
-  }
+.favorite-button :deep(svg) { fill: currentColor; }
+.current-weather { margin: 34px 0; }
+.current-weather__hero { display: flex; align-items: center; gap: 18px; margin-bottom: 22px; }
+.current-weather__icon { flex: 0 0 auto; font-size: clamp(56px, 7vw, 78px); }
+.current-weather__icon--sunny { color: #ffd56b; filter: drop-shadow(0 0 9px rgba(255, 198, 71, 0.42)); }
+.current-weather__icon--partly-cloudy { color: #96e6ff; filter: drop-shadow(0 0 9px rgba(99, 211, 255, 0.38)); }
+.current-weather__icon--cloudy { color: #b3c9de; }
+.current-weather__icon--rain { color: #72ceff; filter: drop-shadow(0 0 8px rgba(71, 184, 255, 0.36)); }
+.current-weather__icon--snow { color: #d7f6ff; }
+.current-weather__icon--storm { color: #caa3ff; filter: drop-shadow(0 0 9px rgba(174, 117, 255, 0.45)); }
+.current-weather__icon--loading { color: #8ccce7; }
+.current-weather__hero strong { display: block; color: #e8fbff; font-size: clamp(50px, 8vw, 82px); letter-spacing: -0.06em; }
+.current-weather__hero p { margin: 4px 0 0; color: #b3d9ea; }
+.weather-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 0; }
+.weather-grid div,
+.daily-grid article { padding: 15px; background: #040b17; border: 1px solid #173b59; border-radius: 10px; }
+dt { display: flex; align-items: center; gap: 8px; color: #9bbaca; font-size: 13px; }
+dt :deep(.el-icon) { flex: 0 0 auto; color: #7fdcff; font-size: 24px; filter: drop-shadow(0 0 5px rgba(93, 215, 255, 0.3)); }
+dd { margin: 6px 0 0; font-size: 18px; font-weight: 800; }
+.section-heading { align-items: center; margin-bottom: 13px; }
+.section-heading h2 { margin: 0; font-size: 18px; }
+.section-heading a { color: #89d8ff; font-size: 13px; }
+.daily-grid { display: grid; grid-template-columns: repeat(7, minmax(110px, 1fr)); gap: 9px; overflow-x: auto; }
+.daily-grid article { min-width: 110px; }
+.daily-grid p { margin: 0 0 12px; color: #9db8c8; font-size: 12px; }
+.daily-card__condition { display: flex; align-items: center; gap: 7px; min-height: 23px; }
+.daily-card__weather-icon { flex: 0 0 auto; color: #a5e9ff; font-size: 20px; }
+.daily-card__weather-icon--sunny { color: #ffd56b; }
+.daily-card__weather-icon--partly-cloudy { color: #9ee6ff; }
+.daily-card__weather-icon--cloudy { color: #b9cce1; }
+.daily-card__weather-icon--rain { color: #72ceff; }
+.daily-card__weather-icon--snow { color: #def7ff; }
+.daily-card__weather-icon--storm { color: #caa3ff; }
+.daily-card__weather-icon--loading { color: #8ccce7; }
+.daily-grid strong,
+.daily-grid span,
+.daily-grid small { display: block; }
+.daily-grid strong { color: #e5f7ff; font-size: 14px; }
+.daily-grid span { margin: 10px 0; color: #b2e9ff; font-size: 13px; }
+.daily-card__metrics { display: grid; gap: 5px; }
+.daily-grid small { display: inline-flex; align-items: center; gap: 4px; color: #91aebe; font-size: 11px; line-height: 1.5; }
+.daily-grid small :deep(.el-icon) { color: #8fd9f7; font-size: 13px; }
+@media (max-width: 720px) {
+  .detail-page { width: calc(100% - 24px); padding-top: 24px; }
+  .detail-card { padding: 22px 16px; }
+  .detail-header { align-items: flex-start; flex-direction: column; }
+  .weather-grid { grid-template-columns: repeat(2, 1fr); }
 }
 </style>
