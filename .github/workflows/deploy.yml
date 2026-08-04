@@ -34,6 +34,8 @@ jobs:
 
       - name: dist 만들기
         run: npm run build
+        env:
+          VITE_OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
 
       - name: GitHub Pages 설정
         uses: actions/configure-pages@v5

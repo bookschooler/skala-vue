@@ -1,17 +1,21 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import BaseDashboardCard from '../components/practices/router_day3/BaseDashboardCard.vue'
 import SearchBar from '../components/practices/router_day3/SearchBar.vue'
 import WeatherCard from '../components/practices/router_day3/WeatherCard.vue'
+import { cityCatalog } from '../data/cityCatalog.js'
+import {
+  fetchCurrentWeather,
+  isWeatherRequestCanceled,
+  WeatherConfigError,
+} from '../services/openWeatherService.js'
 
 const router = useRouter()
-const weatherList = ref([
-  { id: 'city_01', name: '서울', temp: 28, status: '맑음' },
-  { id: 'city_02', name: '성남', temp: 27, status: '구름' },
-  { id: 'city_03', name: '부산', temp: 26, status: '구름' },
-  { id: 'city_04', name: '천안', temp: 24, status: '비' },
-])
+const weatherList = ref([])
+const failedCityIds = ref([])
+const isLoading = ref(false)
+const errorMessage = ref('')
 const searchQuery = ref('')
 const selectedCityId = ref('')
 const selectedCityInfo = ref('카드를 클릭하거나 검색해 보세요.')
@@ -26,6 +30,78 @@ const selectCity = (city) => {
   selectedCityInfo.value = `${city.name}이 선택되었습니다.`
 }
 const showDetail = (cityId) => router.push(`/weather/${cityId}`)
+let activeController
+let batchId = 0
+
+const sortByCatalog = (list) =>
+  [...list].sort(
+    (first, second) =>
+      cityCatalog.findIndex((city) => city.id === first.id) -
+      cityCatalog.findIndex((city) => city.id === second.id),
+  )
+
+const loadWeather = async (cities = cityCatalog) => {
+  activeController?.abort()
+  activeController = new AbortController()
+  const currentBatchId = ++batchId
+  isLoading.value = true
+  errorMessage.value = ''
+
+  try {
+    const results = await Promise.allSettled(
+      cities.map((city) => fetchCurrentWeather(city, { signal: activeController.signal })),
+    )
+    if (currentBatchId !== batchId) return
+
+    const succeeded = results
+      .filter((result) => result.status === 'fulfilled')
+      .map((result) => result.value)
+    const failed = results
+      .map((result, index) => ({ result, city: cities[index] }))
+      .filter(
+        ({ result }) => result.status === 'rejected' && !isWeatherRequestCanceled(result.reason),
+      )
+
+    const succeededIds = new Set(succeeded.map((weather) => weather.id))
+    weatherList.value = sortByCatalog([
+      ...weatherList.value.filter((weather) => !succeededIds.has(weather.id)),
+      ...succeeded,
+    ])
+    failedCityIds.value = failed.map(({ city }) => city.id)
+
+    if (failed.length > 0) {
+      const hasConfigError = failed.some(
+        ({ result }) => result.reason instanceof WeatherConfigError,
+      )
+      errorMessage.value = hasConfigError
+        ? 'API 키가 없습니다. .env.local 파일에 VITE_OPENWEATHER_API_KEY를 설정해 주세요.'
+        : `${failed.map(({ city }) => city.name).join(', ')} 날씨 정보를 불러오지 못했습니다.`
+    }
+
+    if (failedCityIds.value.includes(selectedCityId.value)) {
+      selectedCityId.value = ''
+      selectedCityInfo.value = '카드를 클릭하거나 검색해 보세요.'
+    }
+  } catch (error) {
+    if (currentBatchId === batchId && !isWeatherRequestCanceled(error)) {
+      console.error('날씨 정보를 불러오는 중 오류가 발생했습니다.', error.name)
+      errorMessage.value = '날씨 정보를 불러오지 못했습니다.'
+    }
+  } finally {
+    if (currentBatchId === batchId) isLoading.value = false
+  }
+}
+
+const retryFailed = () => {
+  const retryCities = cityCatalog.filter((city) => failedCityIds.value.includes(city.id))
+  return loadWeather(retryCities.length > 0 ? retryCities : cityCatalog)
+}
+
+onMounted(() => loadWeather())
+onBeforeUnmount(() => {
+  batchId += 1
+  activeController?.abort()
+})
 </script>
 
 <template>
@@ -43,7 +119,16 @@ const showDetail = (cityId) => router.push(`/weather/${cityId}`)
     /></BaseDashboardCard>
     <BaseDashboardCard>
       <h2 class="weather-title">🏙️ 지역별 날씨 현황</h2>
-      <div class="weather-list">
+      <div class="request-status" aria-live="polite">
+        <p v-if="isLoading">날씨 정보를 불러오는 중입니다...</p>
+        <div v-else-if="errorMessage" class="error-message" role="alert">
+          <p>{{ errorMessage }}</p>
+          <button type="button" :disabled="isLoading" @click="retryFailed">
+            {{ isLoading ? '다시 불러오는 중...' : '다시 시도' }}
+          </button>
+        </div>
+      </div>
+      <div v-if="!isLoading || weatherList.length > 0" class="weather-list">
         <WeatherCard
           v-for="weather in filteredWeatherList"
           :key="weather.id"
@@ -52,7 +137,11 @@ const showDetail = (cityId) => router.push(`/weather/${cityId}`)
           @select-card="selectCity"
           @click-detail="showDetail"
         />
-        <p v-if="filteredWeatherList.length === 0" class="empty-message" role="status">
+        <p
+          v-if="!errorMessage && filteredWeatherList.length === 0"
+          class="empty-message"
+          role="status"
+        >
           검색 결과와 일치하는 도시가 없습니다.
         </p>
       </div>
@@ -113,6 +202,30 @@ const showDetail = (cityId) => router.push(`/weather/${cityId}`)
 .weather-list {
   display: grid;
   gap: 13px;
+}
+.request-status p {
+  margin: 0 0 13px;
+}
+.error-message {
+  margin-bottom: 13px;
+  padding: 14px;
+  color: #9b343b;
+  background: #fff5f5;
+  border: 1px solid #f3d4d6;
+  border-radius: 12px;
+}
+.error-message button {
+  padding: 8px 12px;
+  color: #fff;
+  background: #c8434b;
+  border: 0;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.error-message button:disabled {
+  cursor: wait;
+  opacity: 0.65;
 }
 .empty-message {
   margin: 0;
