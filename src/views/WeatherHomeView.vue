@@ -487,6 +487,8 @@ onBeforeUnmount(() => {
 <style scoped>
 .weather-fairy-home {
   --page-gutter: clamp(18px, 4vw, 64px);
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
   padding: 18px var(--page-gutter);
   color: #eaf7ff;
@@ -709,7 +711,8 @@ onBeforeUnmount(() => {
   justify-content: center;
   gap: 10px;
   width: min(1400px, 100%);
-  margin: 14px auto 0;
+  /* 지도 아래에 고정하지 않고 남는 세로 공간을 사용해 화면 하단에 배치한다. */
+  margin: auto auto 0;
 }
 
 .city-cards {
