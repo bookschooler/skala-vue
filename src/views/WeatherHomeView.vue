@@ -489,6 +489,8 @@ onBeforeUnmount(() => {
   --page-gutter: clamp(18px, 4vw, 64px);
   display: flex;
   flex-direction: column;
+  position: relative;
+  isolation: isolate;
   min-height: 100vh;
   padding: 18px var(--page-gutter);
   color: #eaf7ff;
@@ -506,6 +508,8 @@ onBeforeUnmount(() => {
 }
 
 .home-header {
+  position: relative;
+  z-index: 1;
   justify-content: space-between;
   min-height: 40px;
 }
@@ -702,18 +706,19 @@ onBeforeUnmount(() => {
 }
 
 .map-stage {
-  position: relative;
-  width: calc(100% + var(--page-gutter) + var(--page-gutter));
-  margin: 0 0 0 calc(0px - var(--page-gutter));
-  /* 지도와 하단 카드 사이의 남는 화면 높이를 지도 자체가 채운다. */
-  --favorite-map-height: max(280px, calc(100vh - 292px));
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  --favorite-map-height: 100%;
 }
 
 .favorite-strip {
+  position: relative;
+  z-index: 1;
   justify-content: center;
   gap: 10px;
   width: min(1400px, 100%);
-  margin: 14px auto 0;
+  margin: auto auto 0;
 }
 
 .city-cards {
@@ -978,6 +983,8 @@ onBeforeUnmount(() => {
 }
 
 .preview-note {
+  position: relative;
+  z-index: 1;
   margin: 8px 0 0;
   color: #617b91;
   font-size: 11px;
