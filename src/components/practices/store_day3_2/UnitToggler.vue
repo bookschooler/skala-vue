@@ -13,13 +13,13 @@ const nextUnitName = computed(() => (configStore.unit === 'celsius' ? '화씨' :
     <span class="current-unit" aria-live="polite">
       현재: {{ currentUnitName }} {{ configStore.unitSymbol }}
     </span>
-    <button
-      type="button"
+    <el-button
+      type="primary"
       :aria-label="`온도 단위를 ${nextUnitName}로 변경`"
       @click="configStore.toggleUnit()"
     >
       {{ nextUnitName }}로 보기
-    </button>
+    </el-button>
   </div>
 </template>
 
@@ -37,26 +37,6 @@ const nextUnitName = computed(() => (configStore.unit === 'celsius' ? '화씨' :
   font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
-}
-
-button {
-  padding: 9px 12px;
-  color: #ffffff;
-  background: #4f77d9;
-  border: 1px solid #4f77d9;
-  border-radius: 9px;
-  font-size: 13px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-button:hover {
-  background: #3d65c8;
-}
-
-button:focus-visible {
-  outline: 3px solid rgba(74, 119, 226, 0.35);
-  outline-offset: 3px;
 }
 
 @media (max-width: 600px) {

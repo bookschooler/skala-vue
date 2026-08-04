@@ -22,7 +22,7 @@ const selectWithKeyboard = (event) => {
 </script>
 
 <template>
-  <article
+  <el-card
     class="weather-card"
     :class="{ selected: isSelected }"
     role="button"
@@ -33,21 +33,24 @@ const selectWithKeyboard = (event) => {
     @keydown.enter="selectWithKeyboard"
     @keydown.space="selectWithKeyboard"
   >
-    <div class="weather-information">
-      <h3>{{ cityItem.name }} ({{ cityItem.status }})</h3>
-      <p>현재 기온: {{ displayTemp }}{{ configStore.unitSymbol }}</p>
-      <span v-if="cityItem.temp >= 25" class="temperature-label hot">🔥 더움 (25도 이상)</span>
-      <span v-else class="temperature-label cool">❄️ 선선함 (25도 미만)</span>
+    <div class="card-content">
+      <div class="weather-information">
+        <h3>{{ cityItem.name }} ({{ cityItem.status }})</h3>
+        <p>현재 기온: {{ displayTemp }}{{ configStore.unitSymbol }}</p>
+        <el-tag v-if="cityItem.temp >= 25" type="danger" round>🔥 더움 (25도 이상)</el-tag>
+        <el-tag v-else type="primary" round>❄️ 선선함 (25도 미만)</el-tag>
+      </div>
+      <el-button
+        native-type="button"
+        type="primary"
+        plain
+        :aria-label="`${cityItem.name} 상세 날씨 보기`"
+        @click.stop="emit('click-detail', cityItem.id)"
+      >
+        상세보기
+      </el-button>
     </div>
-    <button
-      type="button"
-      class="detail-button"
-      :aria-label="`${cityItem.name} 상세 날씨 보기`"
-      @click.stop="emit('click-detail', cityItem.id)"
-    >
-      상세보기
-    </button>
-  </article>
+  </el-card>
 </template>
 
 <style scoped>
@@ -68,6 +71,16 @@ const selectWithKeyboard = (event) => {
     border-color 0.15s,
     box-shadow 0.15s,
     transform 0.15s;
+}
+.weather-card :deep(.el-card__body),
+.card-content {
+  width: 100%;
+}
+.card-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
 }
 .weather-card:hover {
   border-color: #afc1e8;
@@ -108,20 +121,6 @@ const selectWithKeyboard = (event) => {
   color: #667489;
   font-size: 14px;
 }
-.temperature-label {
-  display: inline-block;
-  padding: 6px 11px;
-  color: #fff;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 700;
-}
-.temperature-label.hot {
-  background: #f16068;
-}
-.temperature-label.cool {
-  background: #559ce5;
-}
 .detail-button {
   flex: 0 0 auto;
   padding: 9px 14px;
@@ -146,6 +145,9 @@ const selectWithKeyboard = (event) => {
     align-items: flex-start;
     gap: 12px;
     padding: 14px;
+  }
+  .card-content {
+    align-items: flex-start;
   }
   .detail-button {
     padding: 8px 10px;

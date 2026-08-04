@@ -1,20 +1,27 @@
 <script setup>
-import { RouterLink, RouterView } from 'vue-router'
-import UnitToggler from './components/practices/store_day3_2/UnitToggler.vue'
+import { computed } from 'vue'
+import { RouterLink, RouterView, useRoute } from 'vue-router'
+
+const route = useRoute()
+
+// 홈은 확정된 전체 지도 레이아웃을 그대로 사용하고,
+// 과제에서 요구한 공통 메뉴는 상세·예보·소개 화면에 제공한다.
+const showUtilityNavigation = computed(() => route.name !== 'WeatherHome')
 </script>
 
 <template>
   <div class="app-shell">
-    <header class="app-header">
-      <RouterLink class="brand" to="/">🌤️ SKALA Weather</RouterLink>
-      <div class="header-actions">
-        <nav aria-label="주요 메뉴">
-          <RouterLink to="/">날씨 대시보드</RouterLink>
-          <RouterLink to="/about">서비스 소개</RouterLink>
-        </nav>
-        <UnitToggler />
+    <nav v-if="showUtilityNavigation" class="utility-navigation" aria-label="날씨요정 공통 메뉴">
+      <RouterLink class="utility-navigation__brand" to="/">WEATHER FAIRY</RouterLink>
+
+      <div class="utility-navigation__links" aria-label="페이지 이동">
+        <RouterLink to="/">홈</RouterLink>
+        <RouterLink to="/forecast">장기 예보</RouterLink>
+        <RouterLink to="/about">소개</RouterLink>
       </div>
-    </header>
+
+    </nav>
+
     <RouterView />
   </div>
 </template>
@@ -23,73 +30,77 @@ import UnitToggler from './components/practices/store_day3_2/UnitToggler.vue'
 * {
   box-sizing: border-box;
 }
-body {
+html,
+body,
+#app {
   margin: 0;
   min-width: 0;
   min-height: 100vh;
-  background: #eef3f9;
-  font-family: Arial, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  background: #02050d;
+  font-family: Pretendard, 'Noto Sans KR', 'Apple SD Gothic Neo', system-ui, sans-serif;
 }
 button,
 input {
   font: inherit;
 }
-.app-header {
+
+.app-shell {
+  min-height: 100vh;
+}
+
+.utility-navigation {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 24px;
+  gap: 28px;
+  width: min(1120px, calc(100% - 32px));
   min-height: 68px;
-  padding: 12px max(24px, calc((100% - 1080px) / 2));
-  background: rgba(255, 255, 255, 0.95);
-  border-bottom: 1px solid #dde5ef;
+  margin: 0 auto;
+  color: #dbe8ff;
 }
-.brand {
-  color: #27405f;
-  font-size: 18px;
+
+.utility-navigation__brand {
+  color: #eaf4ff;
+  font-size: 13px;
   font-weight: 900;
+  letter-spacing: 0.16em;
   text-decoration: none;
+  white-space: nowrap;
 }
-.header-actions,
-.app-header nav {
+
+.utility-navigation__links {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
-.app-header nav a {
-  padding: 9px 12px;
-  color: #65748a;
-  border-radius: 9px;
+
+.utility-navigation__links a {
+  padding: 8px 10px;
+  color: #9cafc8;
+  border-radius: 8px;
   font-size: 14px;
   font-weight: 700;
   text-decoration: none;
 }
-.app-header nav a:hover,
-.app-header nav a.router-link-exact-active {
-  color: #315fc5;
-  background: #edf3ff;
+
+.utility-navigation__links a:hover,
+.utility-navigation__links a:focus-visible,
+.utility-navigation__links a.router-link-exact-active {
+  color: #ecf7ff;
+  background: rgba(102, 174, 255, 0.14);
+  outline: none;
 }
-.app-header a:focus-visible {
-  outline: 3px solid rgba(74, 119, 226, 0.35);
-  outline-offset: 2px;
-}
-@media (max-width: 600px) {
-  .app-header {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 8px;
-    padding: 14px 16px;
-  }
-  .app-header nav {
-    width: 100%;
-  }
-  .header-actions {
-    width: 100%;
+
+@media (max-width: 720px) {
+  .utility-navigation {
     flex-wrap: wrap;
+    gap: 10px 16px;
+    width: calc(100% - 24px);
+    padding: 14px 0;
   }
-  .app-header nav a {
-    flex: 1;
-    text-align: center;
+
+  .utility-navigation__links {
+    order: 3;
+    width: 100%;
   }
 }
 </style>
