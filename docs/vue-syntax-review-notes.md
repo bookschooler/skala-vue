@@ -65,7 +65,7 @@ Vue 컴포넌트는 일반적으로 `.vue` 확장자를 가진 Single File Compo
 
 ```vue
 <script setup>
-import WeatherMockup from './components/practices/basic/WeatherMockup.vue'
+import WeatherMockup from './components/practices/basic/weathermockup_day1.vue'
 </script>
 
 <template>
@@ -73,7 +73,7 @@ import WeatherMockup from './components/practices/basic/WeatherMockup.vue'
 </template>
 ```
 
-현재 과제에서는 `App.vue`가 부모이고 `WeatherMockup.vue`가 자식이다.
+현재 과제에서는 `App.vue`가 부모이고 `weathermockup_day1.vue`가 자식이다.
 
 ### 4. 반응성 데이터와 `ref`
 
@@ -455,7 +455,7 @@ const handleSearchInput = (event) => {
 </style>
 ```
 
-날씨 과제의 카드, 온도 라벨, 버튼 스타일은 `WeatherMockup.vue`의 `<style scoped>`에 작성한다.
+날씨 과제의 카드, 온도 라벨, 버튼 스타일은 `weathermockup_day1.vue`의 `<style scoped>`에 작성한다.
 
 ## 날씨 Mockup 과제 요구사항과 학습 내용 연결
 
@@ -509,4 +509,4 @@ const handleSearchInput = (event) => {
 3. 오류 찾기: `.value`, `:key`, 이벤트 수식어 등의 실수 찾기
 4. 직접 작성: 작은 요구사항을 Vue 코드로 구현
 
-퀴즈는 이 문서와 `WeatherMockup.vue`를 기준으로 출제하고, 정답을 바로 공개하지 않은 채 답변 후 해설하는 방식으로 진행한다.
+퀴즈는 이 문서와 `weathermockup_day1.vue`를 기준으로 출제하고, 정답을 바로 공개하지 않은 채 답변 후 해설하는 방식으로 진행한다.
