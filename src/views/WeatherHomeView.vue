@@ -488,7 +488,7 @@ onBeforeUnmount(() => {
 .weather-fairy-home {
   --page-gutter: clamp(18px, 4vw, 64px);
   min-height: 100vh;
-  padding: 28px var(--page-gutter) 42px;
+  padding: 22px var(--page-gutter);
   color: #eaf7ff;
   background: #020a16;
 }
@@ -505,7 +505,7 @@ onBeforeUnmount(() => {
 
 .home-header {
   justify-content: space-between;
-  min-height: 50px;
+  min-height: 44px;
 }
 
 .header-actions {
@@ -592,13 +592,13 @@ onBeforeUnmount(() => {
   position: relative;
   z-index: 5;
   width: min(670px, 100%);
-  margin: 26px auto 28px;
+  margin: 18px auto;
 }
 
 .search-scope {
   display: flex;
   width: 240px;
-  margin: 0 auto 31px;
+  margin: 0 auto 18px;
   padding: 3px;
   background: #06101f;
   border: 1px solid rgba(50, 127, 192, 0.36);
@@ -624,7 +624,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 12px;
-  min-height: 64px;
+  min-height: 60px;
   padding: 0 20px;
   background: #040c19;
   border: 1px solid #0ca6fb;
@@ -708,7 +708,7 @@ onBeforeUnmount(() => {
   justify-content: center;
   gap: 14px;
   width: min(1400px, 100%);
-  margin: 22px auto 0;
+  margin: 16px auto 0;
 }
 
 .city-cards {
@@ -721,8 +721,8 @@ onBeforeUnmount(() => {
 
 .city-card {
   gap: 8px;
-  min-height: 72px;
-  padding: 12px;
+  min-height: 64px;
+  padding: 9px 12px;
   color: #dceaf2;
   background: #050b19;
   border: 1px solid #1b385d;
@@ -734,7 +734,7 @@ onBeforeUnmount(() => {
   display: grid;
   flex: 0 0 auto;
   width: 40px;
-  height: 50px;
+  height: 44px;
   place-items: center;
   color: #cceeff;
 }
@@ -968,7 +968,7 @@ onBeforeUnmount(() => {
 }
 
 .preview-note {
-  margin: 12px 0 0;
+  margin: 8px 0 0;
   color: #617b91;
   font-size: 11px;
   text-align: center;
