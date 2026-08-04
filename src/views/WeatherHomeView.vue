@@ -705,14 +705,15 @@ onBeforeUnmount(() => {
   position: relative;
   width: calc(100% + var(--page-gutter) + var(--page-gutter));
   margin: 0 0 0 calc(0px - var(--page-gutter));
+  /* 지도와 하단 카드 사이의 남는 화면 높이를 지도 자체가 채운다. */
+  --favorite-map-height: max(280px, calc(100vh - 292px));
 }
 
 .favorite-strip {
   justify-content: center;
   gap: 10px;
   width: min(1400px, 100%);
-  /* 지도 아래에 고정하지 않고 남는 세로 공간을 사용해 화면 하단에 배치한다. */
-  margin: auto auto 0;
+  margin: 14px auto 0;
 }
 
 .city-cards {
