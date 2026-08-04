@@ -1,51 +1,50 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
+import { findCityById } from '../data/cityCatalog.js'
+import {
+  fetchCurrentWeather,
+  isWeatherRequestCanceled,
+  WeatherConfigError,
+} from '../services/openWeatherService.js'
 import { useConfigStore } from '../stores/configStore.js'
 
 const route = useRoute()
 const configStore = useConfigStore()
 const selectedWeather = ref(null)
-const weatherDetails = [
-  {
-    id: 'city_01',
-    name: '서울',
-    temp: 28,
-    status: '맑음',
-    humidity: 58,
-    wind: 2.4,
-    description: '햇살이 강하고 활동하기 좋은 날씨입니다.',
-  },
-  {
-    id: 'city_02',
-    name: '성남',
-    temp: 27,
-    status: '구름',
-    humidity: 64,
-    wind: 1.8,
-    description: '구름이 많지만 비 소식은 없습니다.',
-  },
-  {
-    id: 'city_03',
-    name: '부산',
-    temp: 26,
-    status: '구름',
-    humidity: 72,
-    wind: 4.1,
-    description: '해안 바람과 함께 구름이 지나가고 있습니다.',
-  },
-  {
-    id: 'city_04',
-    name: '천안',
-    temp: 24,
-    status: '비',
-    humidity: 81,
-    wind: 3.2,
-    description: '비가 내리고 있으니 우산을 챙겨 주세요.',
-  },
-]
-const selectWeather = (cityId) => {
-  selectedWeather.value = weatherDetails.find((weather) => weather.id === cityId) ?? null
+const isLoading = ref(false)
+const errorMessage = ref('')
+const isNotFound = ref(false)
+let activeController
+let requestId = 0
+
+const loadWeather = async (cityId = route.params.cityId) => {
+  activeController?.abort()
+  const currentRequestId = ++requestId
+  selectedWeather.value = null
+  errorMessage.value = ''
+  const city = findCityById(cityId)
+  isNotFound.value = !city
+  if (!city) {
+    isLoading.value = false
+    return
+  }
+
+  activeController = new AbortController()
+  isLoading.value = true
+  try {
+    const weather = await fetchCurrentWeather(city, { signal: activeController.signal })
+    if (currentRequestId === requestId) selectedWeather.value = weather
+  } catch (error) {
+    if (currentRequestId !== requestId || isWeatherRequestCanceled(error)) return
+    console.error('상세 날씨 정보를 불러오는 중 오류가 발생했습니다.', error.name)
+    errorMessage.value =
+      error instanceof WeatherConfigError
+        ? 'API 키가 없습니다. .env.local 파일에 VITE_OPENWEATHER_API_KEY를 설정해 주세요.'
+        : '날씨 정보를 불러오지 못했습니다.'
+  } finally {
+    if (currentRequestId === requestId) isLoading.value = false
+  }
 }
 const displayTemp = computed(() => {
   if (!selectedWeather.value) return null
@@ -53,16 +52,33 @@ const displayTemp = computed(() => {
   const rawTemp = selectedWeather.value.temp
   return configStore.unit === 'fahrenheit' ? Math.round((rawTemp * 9) / 5 + 32) : rawTemp
 })
-onMounted(() => selectWeather(route.params.cityId))
 watch(
   () => route.params.cityId,
-  (cityId) => selectWeather(cityId),
+  (cityId) => loadWeather(cityId),
+  { immediate: true },
 )
+onBeforeUnmount(() => {
+  requestId += 1
+  activeController?.abort()
+})
 </script>
 
 <template>
   <main class="detail-page">
-    <section v-if="selectedWeather" class="detail-card">
+    <section v-if="isLoading" class="detail-card empty" role="status">
+      <p class="empty-icon">⏳</p>
+      <h1>날씨 정보를 불러오는 중입니다</h1>
+    </section>
+    <section v-else-if="errorMessage" class="detail-card empty" role="alert">
+      <p class="empty-icon">⚠️</p>
+      <h1>날씨 정보를 불러오지 못했습니다</h1>
+      <p>{{ errorMessage }}</p>
+      <button type="button" class="retry-button" :disabled="isLoading" @click="loadWeather()">
+        다시 시도
+      </button>
+      <RouterLink class="home-link secondary" to="/">메인 대시보드로 돌아가기</RouterLink>
+    </section>
+    <section v-else-if="selectedWeather" class="detail-card">
       <p class="eyebrow">WEATHER DETAIL</p>
       <h1>{{ selectedWeather.name }} 상세 날씨</h1>
       <p class="summary">{{ selectedWeather.description }}</p>
@@ -86,7 +102,7 @@ watch(
       </dl>
       <RouterLink class="home-link" to="/">← 메인 대시보드로</RouterLink>
     </section>
-    <section v-else class="detail-card empty" role="status">
+    <section v-else-if="isNotFound" class="detail-card empty" role="status">
       <p class="empty-icon">🌫️</p>
       <h1>도시 정보를 찾을 수 없습니다</h1>
       <p>요청한 도시 ID({{ route.params.cityId }})에 해당하는 날씨 데이터가 없습니다.</p>
@@ -154,6 +170,20 @@ dd {
   border-radius: 10px;
   font-weight: 700;
   text-decoration: none;
+}
+.retry-button {
+  margin-right: 8px;
+  padding: 11px 16px;
+  color: #fff;
+  background: #c8434b;
+  border: 0;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.home-link.secondary {
+  color: #3c5474;
+  background: #edf2f8;
 }
 .home-link:focus-visible {
   outline: 3px solid rgba(74, 119, 226, 0.35);
