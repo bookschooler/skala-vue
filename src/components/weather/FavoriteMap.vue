@@ -99,7 +99,7 @@ const pinLabel = (city) => `${city.name} ${city.condition} ${displayPinTemperatu
   isolation: isolate;
   overflow: hidden;
   /* 하단 도시 카드까지 첫 화면에 보이도록 지도 높이를 뷰포트 기준으로 제한한다. */
-  height: clamp(280px, calc(100vh - 380px), 430px);
+  height: var(--favorite-map-height, clamp(280px, calc(100vh - 380px), 430px));
   min-height: 0;
   background: #020611;
 }
@@ -185,7 +185,7 @@ const pinLabel = (city) => `${city.name} ${city.condition} ${displayPinTemperatu
 @media (max-width: 700px) {
   .favorite-map {
     width: 100%;
-    height: auto;
+    height: var(--favorite-map-height, auto);
     min-height: 320px;
     aspect-ratio: 1.4 / 1;
   }
