@@ -1,9 +1,9 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { LocationFilled } from '@element-plus/icons-vue'
 import cyberWorldMapUrl from '../../../img/weather-fairy-cyber-world-map-seamless.png'
 import { useConfigStore } from '../../stores/configStore.js'
-import { toMapPosition } from '../../utils/mapPosition.js'
+import { toMapPosition, toMapViewportPosition } from '../../utils/mapPosition.js'
 
 const props = defineProps({
   favorites: {
@@ -20,19 +20,42 @@ const props = defineProps({
 
 const emit = defineEmits(['select-city'])
 const configStore = useConfigStore()
+const mapWorld = ref(null)
+const mapViewport = ref({ width: 0, height: 0 })
+
+let mapResizeObserver
+
+const updateMapViewport = () => {
+  const bounds = mapWorld.value?.getBoundingClientRect()
+  if (!bounds?.width || !bounds?.height) return
+  mapViewport.value = { width: bounds.width, height: bounds.height }
+}
+
+onMounted(() => {
+  updateMapViewport()
+  mapResizeObserver = new ResizeObserver(updateMapViewport)
+  if (mapWorld.value) mapResizeObserver.observe(mapWorld.value)
+})
+
+onBeforeUnmount(() => {
+  mapResizeObserver?.disconnect()
+})
 
 const isSameCity = (first, second) => first?.id && first.id === second?.id
+const mapPositionFor = (city) => toMapViewportPosition(toMapPosition(city), mapViewport.value)
 
 const visiblePins = computed(() => {
   const selected = props.selectedCity
   if (!props.showFavoritePins) return selected ? [selected] : []
-  return props.favorites.filter((city) => !isSameCity(city, selected)).concat(selected ? [selected] : [])
+  return props.favorites
+    .filter((city) => !isSameCity(city, selected))
+    .concat(selected ? [selected] : [])
 })
 
 const focusedMapStyle = computed(() => {
   if (!props.isFocused || !props.selectedCity) return {}
 
-  const { left, top } = toMapPosition(props.selectedCity)
+  const { left, top } = mapPositionFor(props.selectedCity)
   const zoom = 1.22
   const leftValue = Number.parseFloat(left)
   const topValue = Number.parseFloat(top)
@@ -46,7 +69,12 @@ const focusedMapStyle = computed(() => {
 })
 
 const displayPinTemperature = (city) => {
-  if (city.temp === null || city.temp === undefined || city.temp === '' || !Number.isFinite(Number(city.temp))) {
+  if (
+    city.temp === null ||
+    city.temp === undefined ||
+    city.temp === '' ||
+    !Number.isFinite(Number(city.temp))
+  ) {
     return '날씨 확인 중'
   }
 
@@ -62,17 +90,22 @@ const pinLabel = (city) => `${city.name} ${city.condition} ${displayPinTemperatu
   <section class="favorite-map" aria-label="즐겨찾기 도시 지도">
     <div class="favorite-map__viewport">
       <div
+        ref="mapWorld"
         class="favorite-map__world"
         :class="{ 'favorite-map__world--focused': isFocused }"
         :style="focusedMapStyle"
       >
-        <img class="favorite-map__image" :src="cyberWorldMapUrl" alt="청록 네온 국가 윤곽의 세계 지도" />
+        <img
+          class="favorite-map__image"
+          :src="cyberWorldMapUrl"
+          alt="청록 네온 국가 윤곽의 세계 지도"
+        />
         <button
           v-for="city in visiblePins"
           :key="city.id"
           class="map-pin"
           :class="{ 'map-pin--selected': isSameCity(city, selectedCity) }"
-          :style="toMapPosition(city)"
+          :style="mapPositionFor(city)"
           type="button"
           :aria-label="pinLabel(city)"
           @click="emit('select-city', city)"
@@ -83,7 +116,7 @@ const pinLabel = (city) => `${city.name} ${city.condition} ${displayPinTemperatu
           v-if="selectedCity"
           name="selected-card"
           :city="selectedCity"
-          :position="toMapPosition(selectedCity)"
+          :position="mapPositionFor(selectedCity)"
         />
       </div>
     </div>
@@ -144,7 +177,10 @@ const pinLabel = (city) => `${city.name} ${city.condition} ${displayPinTemperatu
   cursor: pointer;
   transform: translate(-50%, -92%);
   filter: drop-shadow(0 0 7px rgba(175, 98, 255, 0.9));
-  transition: color 180ms ease, filter 180ms ease, scale 180ms ease;
+  transition:
+    color 180ms ease,
+    filter 180ms ease,
+    scale 180ms ease;
 }
 
 .map-pin :deep(svg) {

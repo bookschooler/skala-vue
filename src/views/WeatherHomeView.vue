@@ -49,7 +49,9 @@ let searchRequestId = 0
 let selectedWeatherRequestId = 0
 let favoriteWeatherRequestId = 0
 
-const toggleCopy = computed(() => (showFavoritePins.value ? '즐겨찾기 핀 숨기기' : '즐겨찾기 핀 보기'))
+const toggleCopy = computed(() =>
+  showFavoritePins.value ? '즐겨찾기 핀 숨기기' : '즐겨찾기 핀 보기',
+)
 const starterCityLandmarkById = new Map([
   ['city_01', seoulLandmarkUrl],
   ['meteo-1850147', tokyoLandmarkUrl],
@@ -91,13 +93,16 @@ const mapSelectedCity = computed(() => {
   }
 })
 const searchHint = computed(() =>
-  searchScope.value === 'domestic'
-    ? '국내 도시를 검색하세요'
-    : '해외 도시 또는 지역을 검색하세요',
+  searchScope.value === 'domestic' ? '국내 도시를 검색하세요' : '해외 도시 또는 국가를 검색하세요',
 )
 
 const displayTemperature = (temperature) => {
-  if (temperature === null || temperature === undefined || temperature === '' || !Number.isFinite(Number(temperature))) {
+  if (
+    temperature === null ||
+    temperature === undefined ||
+    temperature === '' ||
+    !Number.isFinite(Number(temperature))
+  ) {
     return '—'
   }
   const celsius = Math.round(Number(temperature))
@@ -124,7 +129,8 @@ const loadSelectedWeather = async (city) => {
     if (currentRequestId === selectedWeatherRequestId) setWeather(weather)
   } catch (error) {
     if (currentRequestId !== selectedWeatherRequestId || isWeatherRequestCanceled(error)) return
-    weatherError.value = '선택한 도시의 현재 날씨를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'
+    weatherError.value =
+      '선택한 도시의 현재 날씨를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'
   }
 }
 
@@ -155,7 +161,8 @@ const refreshFavoriteWeather = async ({ excludeCityId = null } = {}) => {
   }
   if (!fetchedWeather.length && !results.every((result) => result.status === 'rejected')) return
   if (!fetchedWeather.length) {
-    weatherError.value = '즐겨찾기 도시의 현재 날씨를 불러오지 못했습니다. 네트워크 연결을 확인해 주세요.'
+    weatherError.value =
+      '즐겨찾기 도시의 현재 날씨를 불러오지 못했습니다. 네트워크 연결을 확인해 주세요.'
   }
   isRefreshingFavorites.value = false
 }
@@ -266,7 +273,7 @@ const scheduleSearch = () => {
   }
 
   // API 응답을 기다리지 않고, 수업에서 다룬 시작 도시 목록은 입력 즉시 보여 준다.
-  const knownResults = searchKnownCities(query, { scope })
+  const knownResults = searchKnownCities(query, { scope }).slice(0, 5)
   searchResults.value = knownResults
   searchState.value = knownResults.length ? 'success' : 'loading'
   searchMessage.value = knownResults.length ? '' : '도시를 찾고 있어요.'
@@ -372,16 +379,24 @@ onBeforeUnmount(() => {
           @compositionend="finishSearchComposition"
         />
       </form>
-      <div v-if="searchQuery.trim() || searchState !== 'idle' || searchMessage" class="search-feedback">
+      <div
+        v-if="searchQuery.trim() || searchState !== 'idle' || searchMessage"
+        class="search-feedback"
+      >
         <p v-if="searchQuery.trim()" class="search-query" aria-live="polite">
           검색 중인 도시: <strong>{{ searchQuery.trim() }}</strong>
         </p>
         <p v-if="searchState === 'loading'" class="search-message">도시를 찾고 있어요.</p>
-        <p v-else-if="searchMessage" class="search-message" aria-live="polite">{{ searchMessage }}</p>
+        <p v-else-if="searchMessage" class="search-message" aria-live="polite">
+          {{ searchMessage }}
+        </p>
         <ul v-if="searchResults.length" class="search-results" aria-label="도시 검색 결과">
           <li v-for="city in searchResults" :key="city.id">
             <button type="button" @click="selectSearchResult(city)">
-              <span><strong>{{ city.name }}</strong><small>{{ city.country }}</small></span>
+              <span
+                ><strong>{{ city.name }}</strong
+                ><small>{{ city.country }}</small></span
+              >
               <el-icon><ArrowRight /></el-icon>
             </button>
           </li>
@@ -420,7 +435,12 @@ onBeforeUnmount(() => {
               </button>
             </header>
             <div class="weather-summary__condition">
-              <el-icon :class="['weather-icon', `weather-icon--${weatherVisual(selectedWeather?.weatherCode).tone}`]">
+              <el-icon
+                :class="[
+                  'weather-icon',
+                  `weather-icon--${weatherVisual(selectedWeather?.weatherCode).tone}`,
+                ]"
+              >
                 <component :is="weatherVisual(selectedWeather?.weatherCode).icon" />
               </el-icon>
               <div>
@@ -428,8 +448,14 @@ onBeforeUnmount(() => {
                 <small>{{ selectedWeather?.status ?? '현재 날씨를 불러오는 중' }}</small>
               </div>
             </div>
-            <p v-if="weatherError" class="weather-summary__error" role="alert">{{ weatherError }}</p>
-            <button class="summary-action summary-action--primary" type="button" @click="openDetail">
+            <p v-if="weatherError" class="weather-summary__error" role="alert">
+              {{ weatherError }}
+            </p>
+            <button
+              class="summary-action summary-action--primary"
+              type="button"
+              @click="openDetail"
+            >
               상세 보기 <el-icon><ArrowRight /></el-icon>
             </button>
           </section>
@@ -460,10 +486,13 @@ onBeforeUnmount(() => {
             <el-icon v-else><Location /></el-icon>
           </span>
           <span class="city-card__copy">
-            <strong>{{ city.name }}</strong><small>{{ displayTemperature(city.temp) }}</small>
+            <strong>{{ city.name }}</strong
+            ><small>{{ displayTemperature(city.temp) }}</small>
           </span>
           <span class="city-card__weather" :aria-label="`현재 날씨: ${city.condition}`">
-            <el-icon :class="['weather-icon', `weather-icon--${weatherVisual(city.weatherCode).tone}`]">
+            <el-icon
+              :class="['weather-icon', `weather-icon--${weatherVisual(city.weatherCode).tone}`]"
+            >
               <component :is="weatherVisual(city.weatherCode).icon" />
             </el-icon>
           </span>
@@ -476,7 +505,8 @@ onBeforeUnmount(() => {
     </section>
 
     <p class="preview-note">
-      현재 날씨·도시 검색 데이터: <a href="https://openweathermap.org/" target="_blank" rel="noreferrer">OpenWeather</a>
+      현재 날씨·도시 검색 데이터:
+      <a href="https://openweathermap.org/" target="_blank" rel="noreferrer">OpenWeather</a>
     </p>
   </main>
 </template>
@@ -559,7 +589,9 @@ onBeforeUnmount(() => {
   background: #100b25;
   border: 1px solid #8c5bff;
   border-radius: 10px;
-  box-shadow: 0 0 17px rgba(143, 85, 255, 0.52), inset 0 0 13px rgba(141, 86, 255, 0.12);
+  box-shadow:
+    0 0 17px rgba(143, 85, 255, 0.52),
+    inset 0 0 13px rgba(141, 86, 255, 0.12);
   font-size: 14px;
   font-weight: 700;
 }
@@ -619,7 +651,9 @@ onBeforeUnmount(() => {
   background: #040c19;
   border: 1px solid #0ca6fb;
   border-radius: 10px;
-  box-shadow: 0 0 18px rgba(0, 153, 255, 0.38), inset 0 0 16px rgba(0, 112, 220, 0.08);
+  box-shadow:
+    0 0 18px rgba(0, 153, 255, 0.38),
+    inset 0 0 16px rgba(0, 112, 220, 0.08);
 }
 
 .city-search :deep(svg) {
@@ -827,7 +861,10 @@ onBeforeUnmount(() => {
   background: rgba(5, 13, 32, 0.82);
   border: 1px solid rgba(166, 108, 255, 0.82);
   border-radius: 12px;
-  box-shadow: 0 0 5px rgba(196, 137, 255, 0.8), 0 0 20px rgba(145, 81, 255, 0.36), inset 0 0 20px rgba(87, 72, 200, 0.08);
+  box-shadow:
+    0 0 5px rgba(196, 137, 255, 0.8),
+    0 0 20px rgba(145, 81, 255, 0.36),
+    inset 0 0 20px rgba(87, 72, 200, 0.08);
   backdrop-filter: blur(7px);
 }
 

@@ -1,6 +1,6 @@
 # 최종 프로젝트 계획 - 날씨요정 (WEATHER FAIRY)
 
-> 화면 디자인·인터랙션의 확정 사항은 [pjt_design_계획.md](./pjt_design_계획.md)에서 별도로 관리한다.
+> 화면 디자인·인터랙션의 확정 사항은 [pjt*design*계획.md](./pjt_design_계획.md)에서 별도로 관리한다.
 
 ## 1. 과제 해석
 
@@ -15,17 +15,17 @@
 
 ### 과제 추적표
 
-| ID | PDF 페이지 | 직접 요구 | 현재 판정 |
-| --- | ---: | --- | --- |
-| R1 | 98 | 날씨 Mockup - 렌더링, 조건부 표시, 검색, 카드/상세 이벤트 | 코드 보존 완료 |
-| R2 | 126 | Composition API - `ref`, `computed`, `watch`, `watchEffect`, 검색 결과 상태 | 코드 보존 완료 |
-| R3 | 158 | 4개 컴포넌트 분리, Props/Emits/Slot/Scoped CSS | 코드 보존 완료 |
-| R4 | 176 | Router, 지연 로딩, 동적 상세, 404, 소개 화면 | 공통 메뉴·상세·404까지 브라우저 재검증 완료 |
-| R5 | 191 | Pinia 단위 Store와 전역 단위 전환 | 홈 상단 제어 영역의 `UnitToggler`와 모든 온도 표기 연동 확인 |
-| R6 | 209 | Axios·OpenWeather 준비 | Axios·키 환경 변수 준비 완료. 세부 요구 문구는 R5를 중복함 |
-| R7 | 228 | 3일차 과제에 Element Plus 적용 | 코드 반영 완료 |
-| R8 | 250 | 메뉴와 활용 API를 추가해 과제 확장 | OpenWeather 검색·현재·5일 예보와 `/forecast`의 Open-Meteo 장기 예보를 브라우저에서 확인함 |
-| R9 | 274 | ESLint, 환경 변수·Git 제외, `dist` GitHub Pages 배포 | GitHub Actions 성공 및 실제 Pages 동작 확인 완료 |
+| ID  | PDF 페이지 | 직접 요구                                                                   | 현재 판정                                                                                 |
+| --- | ---------: | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| R1  |         98 | 날씨 Mockup - 렌더링, 조건부 표시, 검색, 카드/상세 이벤트                   | 코드 보존 완료                                                                            |
+| R2  |        126 | Composition API - `ref`, `computed`, `watch`, `watchEffect`, 검색 결과 상태 | 코드 보존 완료                                                                            |
+| R3  |        158 | 4개 컴포넌트 분리, Props/Emits/Slot/Scoped CSS                              | 코드 보존 완료                                                                            |
+| R4  |        176 | Router, 지연 로딩, 동적 상세, 404, 소개 화면                                | 공통 메뉴·상세·404까지 브라우저 재검증 완료                                               |
+| R5  |        191 | Pinia 단위 Store와 전역 단위 전환                                           | 홈 상단 제어 영역의 `UnitToggler`와 모든 온도 표기 연동 확인                              |
+| R6  |        209 | Axios·OpenWeather 준비                                                      | Axios·키 환경 변수 준비 완료. 세부 요구 문구는 R5를 중복함                                |
+| R7  |        228 | 3일차 과제에 Element Plus 적용                                              | 코드 반영 완료                                                                            |
+| R8  |        250 | 메뉴와 활용 API를 추가해 과제 확장                                          | OpenWeather 검색·현재·5일 예보와 `/forecast`의 Open-Meteo 장기 예보를 브라우저에서 확인함 |
+| R9  |        274 | ESLint, 환경 변수·Git 제외, `dist` GitHub Pages 배포                        | GitHub Actions 성공 및 실제 Pages 동작 확인 완료                                          |
 
 ## 2. PDF 필수 요구사항
 
@@ -92,25 +92,25 @@
 
 ## 3. 현재 구현과 파일 구성
 
-| 파일 | 현재 책임 | 연결 요구사항 |
-| --- | --- | --- |
-| `src/components/practices/basic/weathermockup_day1.vue` | Day 1 Mockup 원본 구현 보존 | R1 |
-| `src/components/practices/composition/WeatherComposition_day2.vue` | `computed`·`watch`·`watchEffect` 실습 보존 | R2 |
-| `src/components/practices/components_day2_1/` | 부모·Slot·검색·카드의 4개 컴포넌트 실습 보존 | R3 |
-| `src/main.js` | Pinia, Router, Element Plus 전역 등록 | R4, R5, R7 |
-| `src/App.vue` | 상세·예보·소개 화면의 공통 RouterLink 메뉴, `RouterView` | R4, R8 |
-| `src/router/index.js` | Hash Router, Lazy Loading, 동적 상세, 404, 예보 경로 | R4, R8, R9 |
-| `src/views/WeatherHomeView.vue` | 국내/해외 검색, 현재 날씨, 지도 이동·핀, 즐겨찾기, 상단 단위 전환, 재시도 상태 | R1, R2, R4, R5, R6, R7 |
-| `src/views/WeatherDetailView.vue` | 좌표/도시 ID 기반 상세 날씨, 5일 예보, 단위·즐겨찾기 전환 | R4, R5, R6, R7 |
-| `src/views/WeatherForecastView.vue` | 즐겨찾기 도시 선택, 최대 16일 예보, 요청 취소·오류·빈 상태 | R5, R7, R8 |
-| `src/services/openMeteoService.js` | Axios 16일 일별·시간별·UV 응답 정규화 | R8 |
-| `src/services/openWeatherService.js` | Axios Geocoding·현재·5일/3시간 예보·대기질 응답 정규화 | R6, R8 |
-| `src/stores/favoriteStore.js` | 즐겨찾기 최대 12개·중복 방지·localStorage 영속화 | 개선 기능 |
-| `src/stores/configStore.js` | 전역 온도 단위 상태·Getter·Action | R5 |
-| `src/components/practices/store_day3_2/UnitToggler.vue` | 공통 단위 전환 UI | R5, R7 |
-| `.env.example`, `.env.staging`, `.env.production` | 환경별 공개 설정 예시 | R9 |
-| `.github/workflows/deploy-pages.yml` | lint → production build → Pages artifact 배포 | R9 |
-| `eslint.config.js`, `package.json` | ESLint 설정과 검사·빌드 명령 | R9 |
+| 파일                                                               | 현재 책임                                                                      | 연결 요구사항          |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------ | ---------------------- |
+| `src/components/practices/basic/weathermockup_day1.vue`            | Day 1 Mockup 원본 구현 보존                                                    | R1                     |
+| `src/components/practices/composition/WeatherComposition_day2.vue` | `computed`·`watch`·`watchEffect` 실습 보존                                     | R2                     |
+| `src/components/practices/components_day2_1/`                      | 부모·Slot·검색·카드의 4개 컴포넌트 실습 보존                                   | R3                     |
+| `src/main.js`                                                      | Pinia, Router, Element Plus 전역 등록                                          | R4, R5, R7             |
+| `src/App.vue`                                                      | 상세·예보·소개 화면의 공통 RouterLink 메뉴, `RouterView`                       | R4, R8                 |
+| `src/router/index.js`                                              | Hash Router, Lazy Loading, 동적 상세, 404, 예보 경로                           | R4, R8, R9             |
+| `src/views/WeatherHomeView.vue`                                    | 국내/해외 검색, 현재 날씨, 지도 이동·핀, 즐겨찾기, 상단 단위 전환, 재시도 상태 | R1, R2, R4, R5, R6, R7 |
+| `src/views/WeatherDetailView.vue`                                  | 좌표/도시 ID 기반 상세 날씨, 5일 예보, 단위·즐겨찾기 전환                      | R4, R5, R6, R7         |
+| `src/views/WeatherForecastView.vue`                                | 즐겨찾기 도시 선택, 최대 16일 예보, 요청 취소·오류·빈 상태                     | R5, R7, R8             |
+| `src/services/openMeteoService.js`                                 | Axios 16일 일별·시간별·UV 응답 정규화                                          | R8                     |
+| `src/services/openWeatherService.js`                               | Axios Geocoding·현재·5일/3시간 예보·대기질 응답 정규화                         | R6, R8                 |
+| `src/stores/favoriteStore.js`                                      | 즐겨찾기 최대 12개·중복 방지·localStorage 영속화                               | 개선 기능              |
+| `src/stores/configStore.js`                                        | 전역 온도 단위 상태·Getter·Action                                              | R5                     |
+| `src/components/practices/store_day3_2/UnitToggler.vue`            | 공통 단위 전환 UI                                                              | R5, R7                 |
+| `.env.example`, `.env.staging`, `.env.production`                  | 환경별 공개 설정 예시                                                          | R9                     |
+| `.github/workflows/deploy-pages.yml`                               | lint → production build → Pages artifact 배포                                  | R9                     |
+| `eslint.config.js`, `package.json`                                 | ESLint 설정과 검사·빌드 명령                                                   | R9                     |
 
 ### 보존·확장 원칙
 
@@ -127,22 +127,22 @@
 
 ### 필수 과제와 개선 기능의 결합 원칙
 
-| 단계 | 기능 | 최종 프로젝트에서의 역할 |
-| --- | --- | --- |
-| 1단계: 기반 | 도시 검색, 현재 날씨, 상세, 단위 전환, 예보 메뉴/API, 오류 처리, 배포 | PDF 실습 요구를 최종 서비스의 뼈대로 통합 |
-| 2단계: 개인화 | 관심 도시 즐겨찾기와 현지 시각 | 해외 친구·여행 도시를 모아 보는 사용자 요구 |
-| 3단계: 차별화 | 평일/주말 모드 분리 | 같은 예보 데이터를 서로 다른 의사결정 UI로 가공 |
-| 4단계: 표현 | 날씨별 착장 캐릭터, 실내 대안 | 데이터 해석 결과를 아름답고 기억에 남는 방식으로 전달 |
+| 단계          | 기능                                                                  | 최종 프로젝트에서의 역할                              |
+| ------------- | --------------------------------------------------------------------- | ----------------------------------------------------- |
+| 1단계: 기반   | 도시 검색, 현재 날씨, 상세, 단위 전환, 예보 메뉴/API, 오류 처리, 배포 | PDF 실습 요구를 최종 서비스의 뼈대로 통합             |
+| 2단계: 개인화 | 관심 도시 즐겨찾기와 현지 시각                                        | 해외 친구·여행 도시를 모아 보는 사용자 요구           |
+| 3단계: 차별화 | 평일/주말 모드 분리                                                   | 같은 예보 데이터를 서로 다른 의사결정 UI로 가공       |
+| 4단계: 표현   | 날씨별 착장 캐릭터, 실내 대안                                         | 데이터 해석 결과를 아름답고 기억에 남는 방식으로 전달 |
 
 - 1단계부터 4단계는 서로 별도 과제가 아니다. **최종 제출 화면에는 모든 단계가 함께 존재**해야 한다.
 - 다만 구현과 검증은 기반 기능부터 진행한다. 하위 단계가 완성되지 않은 상태에서 디자인 기능이 기존 검색·라우팅·배포 동작을 깨뜨리지 않도록 하기 위함이다.
 
 ### 평일/주말 UI 설계
 
-| 모드 | 사용자가 답을 얻는 질문 | 입력·반응형 데이터 | 결과 UI |
-| --- | --- | --- |
-| 평일 | 우산을 챙길까? 출퇴근 때 얼마나 덥거나 추울까? | 선택 도시, 출퇴근 시간대, 3시간 예보의 강수·기온 | 한 줄 행동 알림, 시간대 카드, 날씨별 착장 캐릭터 |
-| 주말 | 어느 도시가 나들이에 가장 좋을까? 비가 오면 뭘 할까? | 관심 도시 목록, 선택 날짜, 활동, 예보의 기온·강수·바람 | 도시 비교 점수, 시간대 타임라인, 실내 대안 |
+| 모드 | 사용자가 답을 얻는 질문                              | 입력·반응형 데이터                                     | 결과 UI                                          |
+| ---- | ---------------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------ |
+| 평일 | 우산을 챙길까? 출퇴근 때 얼마나 덥거나 추울까?       | 선택 도시, 출퇴근 시간대, 3시간 예보의 강수·기온       | 한 줄 행동 알림, 시간대 카드, 날씨별 착장 캐릭터 |
+| 주말 | 어느 도시가 나들이에 가장 좋을까? 비가 오면 뭘 할까? | 관심 도시 목록, 선택 날짜, 활동, 예보의 기온·강수·바람 | 도시 비교 점수, 시간대 타임라인, 실내 대안       |
 
 - 모드는 단순히 오늘 요일만 보고 고정하지 않는다. 평일에도 다음 주말을 계획할 수 있도록 `계획 날짜` 또는 `평일/주말` 선택 상태를 둔다.
 - 다음 단계에서는 Open-Meteo 장기 예보의 시간별 원본을 날짜·도시·시간대로 파생하고, 원본 배열을 직접 수정하지 않은 `computed` 필터·그룹·점수화를 적용한다.
@@ -185,16 +185,16 @@ computed: 선택 도시 · 날짜 · 활동 · 시간대별 필터 · 적합도 
 
 ### 예정 파일
 
-| 파일 | 예정 작업 |
-| --- | --- |
-| `src/stores/favoriteStore.js` | 즐겨찾기 ID 추가·삭제·영속화 |
-| `src/services/openMeteoService.js` | 좌표 기반 16일·시간별 `uv_index` 요청·정규화 |
-| `src/services/openWeatherService.js` | Geocoding·현재·5일/3시간 예보·대기질의 강수·시간 정규화 |
-| `src/composables/useWeatherPlanner.js` | 날짜·활동별 예보 필터와 적합도 계산 |
-| `src/data/indoorRecommendations.js` | 비 오는 날 도시별 실내 대안 정적 데이터 |
-| `src/views/WeatherForecastView.vue` 또는 새 `WeatherPlannerView.vue` | 평일/주말 모드 UI와 도시 비교 |
-| `src/components/weather/OutfitCharacter.vue` | 날씨 조건에 따른 착장 캐릭터·소품 렌더링 |
-| `src/components/weather/FavoriteCityList.vue` | 관심 도시의 현재 날씨·현지 시간·빠른 이동 |
+| 파일                                                                 | 예정 작업                                               |
+| -------------------------------------------------------------------- | ------------------------------------------------------- |
+| `src/stores/favoriteStore.js`                                        | 즐겨찾기 ID 추가·삭제·영속화                            |
+| `src/services/openMeteoService.js`                                   | 좌표 기반 16일·시간별 `uv_index` 요청·정규화            |
+| `src/services/openWeatherService.js`                                 | Geocoding·현재·5일/3시간 예보·대기질의 강수·시간 정규화 |
+| `src/composables/useWeatherPlanner.js`                               | 날짜·활동별 예보 필터와 적합도 계산                     |
+| `src/data/indoorRecommendations.js`                                  | 비 오는 날 도시별 실내 대안 정적 데이터                 |
+| `src/views/WeatherForecastView.vue` 또는 새 `WeatherPlannerView.vue` | 평일/주말 모드 UI와 도시 비교                           |
+| `src/components/weather/OutfitCharacter.vue`                         | 날씨 조건에 따른 착장 캐릭터·소품 렌더링                |
+| `src/components/weather/FavoriteCityList.vue`                        | 관심 도시의 현재 날씨·현지 시간·빠른 이동               |
 
 ## 6. 구현 순서
 
@@ -215,7 +215,7 @@ computed: 선택 도시 · 날짜 · 활동 · 시간대별 필터 · 적합도 
 - [x] `weathermockup_day1.vue`에 `weatherList`의 `v-for`와 `:key="weather.id"`가 있다.
 - [x] 25℃ 기준의 더움·선선함 조건부 라벨이 있다.
 - [x] 한글 검색 입력의 `:value`·`@input`과 현재 입력값 표시가 있다.
-- [x] 최종 홈 검색창도 `searchQuery`를 즉시 보여 주며, 예를 들어 `뉴욕` 입력 시 검색 결과와 별개로 `검색 중인 도시: 뉴욕`을 표시한다.
+- [x] 최종 홈 검색창도 `searchQuery`를 즉시 보여 주며, 예를 들어 `뉴욕` 입력 시 검색 결과와 별개로 `검색 중인 도시: 뉴욕`을 표시한다. 해외 탭은 `미국`·`일본`처럼 국가명만 입력해도 대표 도시 후보를 최대 5개 표시한다.
 - [x] 카드 선택 상태바와 상세 버튼의 `@click.stop`이 있다.
 - [x] 초기 실습 파일에서는 `window.alert`로 상세 안내를 보여 준다.
 - [x] 이후 Router 단계의 최종 홈에서는 같은 선택 흐름을 API 도시 선택·상세 라우팅으로 확장했고, 상세 화면 이동을 브라우저에서 확인했다.
