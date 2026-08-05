@@ -45,11 +45,11 @@ const isSameCity = (first, second) => first?.id && first.id === second?.id
 const mapPositionFor = (city) => toMapViewportPosition(toMapPosition(city), mapViewport.value)
 
 const visiblePins = computed(() => {
-  const selected = props.selectedCity
-  if (!props.showFavoritePins) return selected ? [selected] : []
+  // 지도 위 핀은 '즐겨찾기 핀 보기'가 켜진 즐겨찾기 도시에만 한정한다.
+  // 선택 도시는 날씨 카드로는 계속 확인할 수 있지만, 별표를 해제한 순간
+  // 즐겨찾기 목록에서 빠지므로 핀도 같은 렌더 사이클에 사라진다.
+  if (!props.showFavoritePins) return []
   return props.favorites
-    .filter((city) => !isSameCity(city, selected))
-    .concat(selected ? [selected] : [])
 })
 
 const focusedMapStyle = computed(() => {
