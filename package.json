@@ -8,6 +8,7 @@
     "build": "vite build",
     "build:staging": "vite build --mode staging",
     "build:production": "vite build --mode production",
+    "test": "node --test test/*.test.mjs",
     "preview": "vite preview",
     "lint": "run-s lint:*",
     "lint:oxlint": "oxlint src vite.config.js eslint.config.js",

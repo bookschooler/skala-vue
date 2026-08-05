@@ -1,5 +1,11 @@
 import axios from 'axios'
-import { cityCatalog, defaultFavoriteCities, isDomesticCity, quickSearchCities } from '../data/cityCatalog.js'
+import {
+  cityCatalog,
+  countrySearchCities,
+  defaultFavoriteCities,
+  isDomesticCity,
+  quickSearchCities,
+} from '../data/cityCatalog.js'
 
 const openWeatherClient = axios.create({
   baseURL: 'https://api.openweathermap.org',
@@ -40,17 +46,22 @@ const normalizeSearchText = (value) =>
     .trim()
 
 const knownSearchCities = Array.from(
-  new Map([...cityCatalog, ...defaultFavoriteCities, ...quickSearchCities].map((city) => [city.id, city])).values(),
+  new Map(
+    [...cityCatalog, ...defaultFavoriteCities, ...quickSearchCities, ...countrySearchCities].map(
+      (city) => [city.id, city],
+    ),
+  ).values(),
 )
 
 const citySearchScore = (city, query) => {
   const normalizedQuery = normalizeSearchText(query)
   const cityName = normalizeSearchText(city.name)
+  const country = normalizeSearchText(city.country)
   const alternateNames = normalizeSearchText(city.query)
 
   if (cityName === normalizedQuery) return 0
   if (cityName.startsWith(normalizedQuery)) return 1
-  if (alternateNames.includes(normalizedQuery)) return 2
+  if (country === normalizedQuery || alternateNames.includes(normalizedQuery)) return 2
   return 3
 }
 
@@ -58,6 +69,10 @@ const sortCitiesByRelevance = (cities, query) =>
   [...cities].sort((first, second) => {
     const scoreDelta = citySearchScore(first, query) - citySearchScore(second, query)
     if (scoreDelta !== 0) return scoreDelta
+    const countryRankDelta =
+      Number(first.countrySearchRank ?? Number.MAX_SAFE_INTEGER) -
+      Number(second.countrySearchRank ?? Number.MAX_SAFE_INTEGER)
+    if (countryRankDelta !== 0) return countryRankDelta
     return normalizeSearchText(first.name).localeCompare(normalizeSearchText(second.name), 'ko-KR')
   })
 
@@ -150,7 +165,8 @@ const toWeatherVisualCode = (weatherId, cloudiness = 0) => {
   return 3
 }
 
-const weatherStatus = (weather) => weather?.description?.trim() || weather?.main?.trim() || '날씨 정보 없음'
+const weatherStatus = (weather) =>
+  weather?.description?.trim() || weather?.main?.trim() || '날씨 정보 없음'
 
 const formatCityDateTime = (timestamp, timezoneOffset = 0) => {
   if (!isFiniteNumber(timestamp)) return null
@@ -162,7 +178,11 @@ const formatCityDateTime = (timestamp, timezoneOffset = 0) => {
 
 const localDateParts = (timestamp, timezoneOffset = 0) => {
   const value = new Date((Number(timestamp) + Number(timezoneOffset || 0)) * 1000).toISOString()
-  return { date: value.slice(0, 10), hour: Number(value.slice(11, 13)), dateTime: value.slice(0, 16) }
+  return {
+    date: value.slice(0, 10),
+    hour: Number(value.slice(11, 13)),
+    dateTime: value.slice(0, 16),
+  }
 }
 
 const normalizeCurrent = (city, data) => {
@@ -205,7 +225,9 @@ const normalizeForecast = (data) => {
   const timezoneOffset = Number(data?.city?.timezone ?? 0)
   const items = Array.isArray(data?.list) ? data.list : []
   const hourly = items
-    .filter((item) => isFiniteNumber(item?.dt) && isFiniteNumber(item?.main?.temp) && item?.weather?.[0])
+    .filter(
+      (item) => isFiniteNumber(item?.dt) && isFiniteNumber(item?.main?.temp) && item?.weather?.[0],
+    )
     .map((item) => {
       const { dateTime } = localDateParts(item.dt, timezoneOffset)
       return {
@@ -223,19 +245,23 @@ const normalizeForecast = (data) => {
 
   const groupedDaily = new Map()
   for (const item of items) {
-    if (!isFiniteNumber(item?.dt) || !isFiniteNumber(item?.main?.temp) || !item?.weather?.[0]) continue
+    if (!isFiniteNumber(item?.dt) || !isFiniteNumber(item?.main?.temp) || !item?.weather?.[0])
+      continue
     const localTime = localDateParts(item.dt, timezoneOffset)
     const dayItems = groupedDaily.get(localTime.date) ?? []
     groupedDaily.set(localTime.date, [...dayItems, { ...item, localHour: localTime.hour }])
   }
 
   const daily = [...groupedDaily.entries()].slice(0, 5).map(([date, entries]) => {
-    const representative = entries.find((item) => item.localHour === 12) ?? entries[Math.floor(entries.length / 2)]
+    const representative =
+      entries.find((item) => item.localHour === 12) ?? entries[Math.floor(entries.length / 2)]
     return {
       date,
       minTemp: Math.min(...entries.map((item) => Number(item.main.temp_min ?? item.main.temp))),
       maxTemp: Math.max(...entries.map((item) => Number(item.main.temp_max ?? item.main.temp))),
-      precipitationProbability: Math.round(Math.max(...entries.map((item) => Number(item.pop ?? 0))) * 100),
+      precipitationProbability: Math.round(
+        Math.max(...entries.map((item) => Number(item.pop ?? 0))) * 100,
+      ),
       weatherCode: toWeatherVisualCode(representative.weather[0].id, representative.clouds?.all),
       status: weatherStatus(representative.weather[0]),
       sunrise: data?.city?.sunrise ? formatCityDateTime(data.city.sunrise, timezoneOffset) : null,
@@ -244,11 +270,13 @@ const normalizeForecast = (data) => {
     }
   })
 
-  if (!hourly.length || !daily.length) throw new Error('OpenWeather 예보 응답 형식이 올바르지 않습니다.')
+  if (!hourly.length || !daily.length)
+    throw new Error('OpenWeather 예보 응답 형식이 올바르지 않습니다.')
   return { hourly, daily }
 }
 
-const currentWeatherCacheKey = (city) => `${Number(city.lat).toFixed(3)},${Number(city.lon).toFixed(3)}`
+const currentWeatherCacheKey = (city) =>
+  `${Number(city.lat).toFixed(3)},${Number(city.lon).toFixed(3)}`
 
 export const fetchCurrentWeather = async (city, { signal } = {}) => {
   assertCoordinates(city)
@@ -286,7 +314,9 @@ export const fetchWeatherBundle = async (city, { signal } = {}) => {
       params: { ...sharedParams, units: 'metric', lang: 'kr' },
       signal,
     }),
-    openWeatherClient.get('/data/2.5/air_pollution', { params: sharedParams, signal }).catch(() => null),
+    openWeatherClient
+      .get('/data/2.5/air_pollution', { params: sharedParams, signal })
+      .catch(() => null),
   ])
   const current = {
     ...normalizeCurrent(city, currentResponse.data),
@@ -303,4 +333,5 @@ export const fetchWeatherBundle = async (city, { signal } = {}) => {
   }
 }
 
-export const isWeatherRequestCanceled = (error) => axios.isCancel(error) || error?.code === 'ERR_CANCELED'
+export const isWeatherRequestCanceled = (error) =>
+  axios.isCancel(error) || error?.code === 'ERR_CANCELED'

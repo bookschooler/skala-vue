@@ -10,7 +10,14 @@ const mapCalibrationAnchors = Object.freeze([
   { name: '경주', countryCode: 'KR', lat: 35.8562, lon: 129.2247, left: 81.6, top: 43.7 },
   { name: '도쿄', countryCode: 'JP', lat: 35.6895, lon: 139.6917, left: 83.2, top: 44.5 },
   { name: '오사카 시', countryCode: 'JP', lat: 34.6938, lon: 135.5011, left: 81.9, top: 45.0 },
-  { name: '오사카 국제공항', countryCode: 'JP', lat: 34.7855, lon: 135.4382, left: 81.85, top: 44.95 },
+  {
+    name: '오사카 국제공항',
+    countryCode: 'JP',
+    lat: 34.7855,
+    lon: 135.4382,
+    left: 81.85,
+    top: 44.95,
+  },
   { name: '파리', countryCode: 'FR', lat: 48.8566, lon: 2.3522, left: 47.8, top: 33.2 },
   { name: '뉴욕', countryCode: 'US', lat: 40.7128, lon: -74.006, left: 30.0, top: 42.7 },
   { name: '런던', countryCode: 'GB', lat: 51.5072, lon: -0.1276, left: 45.8, top: 30.0 },
@@ -21,9 +28,15 @@ const mapCalibrationAnchors = Object.freeze([
   { name: '시드니', countryCode: 'AU', lat: -33.8688, lon: 151.2093, left: 80.8, top: 78.5 },
 ])
 
+// `FavoriteMap` 배경 PNG의 고유 크기다. 핀도 이 이미지 기준의 좌표를 쓰고,
+// 화면에서는 `object-fit: cover`와 같은 계산으로만 변환한다.
+const mapImageSize = Object.freeze({ width: 1942, height: 809 })
+
 const positionKey = (city) => `${city?.name ?? ''}|${city?.countryCode ?? ''}`
 const isCoordinate = (value) => Number.isFinite(Number(value))
-const directAnchorByKey = new Map(mapCalibrationAnchors.map((anchor) => [positionKey(anchor), anchor]))
+const directAnchorByKey = new Map(
+  mapCalibrationAnchors.map((anchor) => [positionKey(anchor), anchor]),
+)
 
 const rawMapPosition = (latitude, longitude) => ({
   left: 10 + ((longitude + 180) / 360) * 75,
@@ -37,7 +50,8 @@ const haversineDistanceKm = (fromLat, fromLon, toLat, toLon) => {
   const startLat = toRadians(fromLat)
   const endLat = toRadians(toLat)
   const arc =
-    Math.sin(latDelta / 2) ** 2 + Math.cos(startLat) * Math.cos(endLat) * Math.sin(lonDelta / 2) ** 2
+    Math.sin(latDelta / 2) ** 2 +
+    Math.cos(startLat) * Math.cos(endLat) * Math.sin(lonDelta / 2) ** 2
   return 6371 * 2 * Math.atan2(Math.sqrt(arc), Math.sqrt(1 - arc))
 }
 
@@ -66,7 +80,9 @@ const nearestMapCorrection = (latitude, longitude) => {
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
 
-export const mapPositionAuditCities = Object.freeze(mapCalibrationAnchors.map((anchor) => positionKey(anchor)))
+export const mapPositionAuditCities = Object.freeze(
+  mapCalibrationAnchors.map((anchor) => positionKey(anchor)),
+)
 
 export const toMapPosition = (city) => {
   const directAnchor = directAnchorByKey.get(positionKey(city))
@@ -81,5 +97,29 @@ export const toMapPosition = (city) => {
   return {
     left: `${clamp(rawPosition.left + correction.left, 5, 95).toFixed(2)}%`,
     top: `${clamp(rawPosition.top + correction.top, 8, 92).toFixed(2)}%`,
+  }
+}
+
+// CSS `object-fit: cover`가 중앙을 기준으로 확대·크롭한 뒤의 부모 요소 좌표를 구한다.
+// 이미지와 핀이 항상 같은 변환을 거치므로 화면 비율이 바뀌어도 서로 어긋나지 않는다.
+export const toMapViewportPosition = (sourcePosition, viewport) => {
+  const sourceLeft = Number.parseFloat(sourcePosition?.left)
+  const sourceTop = Number.parseFloat(sourcePosition?.top)
+  const width = Number(viewport?.width)
+  const height = Number(viewport?.height)
+
+  if (!Number.isFinite(sourceLeft) || !Number.isFinite(sourceTop) || width <= 0 || height <= 0) {
+    return sourcePosition ?? { left: '50%', top: '50%' }
+  }
+
+  const scale = Math.max(width / mapImageSize.width, height / mapImageSize.height)
+  const renderedWidth = mapImageSize.width * scale
+  const renderedHeight = mapImageSize.height * scale
+  const left = ((renderedWidth * (sourceLeft / 100) + (width - renderedWidth) / 2) / width) * 100
+  const top = ((renderedHeight * (sourceTop / 100) + (height - renderedHeight) / 2) / height) * 100
+
+  return {
+    left: `${left.toFixed(2)}%`,
+    top: `${top.toFixed(2)}%`,
   }
 }
