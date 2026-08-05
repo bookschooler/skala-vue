@@ -4,7 +4,6 @@ import { RouterLink, useRouter } from 'vue-router'
 import { ArrowLeft, ArrowRight, Location, Search, Star, StarFilled } from '@element-plus/icons-vue'
 import FavoriteMap from '../components/weather/FavoriteMap.vue'
 import UnitToggler from '../components/practices/store_day3_2/UnitToggler.vue'
-import { cityCatalog } from '../data/cityCatalog.js'
 import { getWeatherVisual } from '../utils/weatherVisual.js'
 import bangkokLandmarkUrl from '../../img/city-landmarks/bangkok.png'
 import londonLandmarkUrl from '../../img/city-landmarks/london.png'
@@ -27,7 +26,8 @@ const router = useRouter()
 const configStore = useConfigStore()
 const favoriteStore = useFavoriteStore()
 
-const selectedCity = ref(favoriteStore.cities[0] ?? cityCatalog[0])
+// 처음 홈에 들어왔을 때는 검색 또는 즐겨찾기 선택 전까지 큰 날씨 카드를 보이지 않는다.
+const selectedCity = ref(null)
 const showFavoritePins = ref(true)
 const searchScope = ref('domestic')
 const searchQuery = ref('')
@@ -309,8 +309,7 @@ watch(
 )
 
 onMounted(() => {
-  loadSelectedWeather(selectedCity.value)
-  // 첫 카드(선택 도시)를 먼저 완성하고, 나머지 즐겨찾기는 배경에서 불러온다.
+  // 홈 초기 화면은 하단 즐겨찾기 미니 카드만 표시하고, 날씨는 배경에서 채운다.
   favoriteWeatherTimer = window.setTimeout(() => {
     refreshFavoriteWeather({ excludeCityId: selectedCity.value?.id })
   }, 700)
@@ -644,16 +643,70 @@ onBeforeUnmount(() => {
 
 .city-search {
   display: flex;
+  position: relative;
+  isolation: isolate;
   align-items: center;
   gap: 10px;
   min-height: 48px;
   padding: 0 16px;
   background: #040c19;
-  border: 1px solid #0ca6fb;
+  border: 1px solid #6cd6ff;
   border-radius: 10px;
   box-shadow:
-    0 0 18px rgba(0, 153, 255, 0.38),
-    inset 0 0 16px rgba(0, 112, 220, 0.08);
+    0 0 6px rgba(214, 247, 255, 0.9),
+    0 0 18px rgba(0, 188, 255, 0.72),
+    0 0 42px rgba(21, 115, 255, 0.46),
+    inset 0 0 20px rgba(0, 151, 255, 0.14);
+}
+
+.city-search::before {
+  position: absolute;
+  inset: -3px;
+  z-index: -1;
+  padding: 1px;
+  pointer-events: none;
+  content: '';
+  background: conic-gradient(
+    from 90deg,
+    transparent,
+    #35caff 18%,
+    #e2fbff 25%,
+    #4a9dff 39%,
+    transparent 52%,
+    #2db8ff 74%,
+    #e2fbff 83%,
+    transparent
+  );
+  border-radius: 12px;
+  filter: blur(3px);
+  opacity: 0.86;
+  animation: search-border-pulse 3.4s ease-in-out infinite;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+.city-search::after {
+  position: absolute;
+  top: -2px;
+  left: 18%;
+  width: 64%;
+  height: 2px;
+  pointer-events: none;
+  content: '';
+  background: linear-gradient(90deg, transparent, #e8fdff 50%, transparent);
+  box-shadow:
+    0 0 6px #e8fdff,
+    0 0 16px #2fbfff,
+    0 0 32px rgba(35, 145, 255, 0.9);
+  animation: search-beam-pulse 2.8s ease-in-out infinite;
+}
+
+.city-search > * {
+  position: relative;
+  z-index: 1;
 }
 
 .city-search :deep(svg) {
@@ -673,6 +726,30 @@ onBeforeUnmount(() => {
 
 .city-search input::placeholder {
   color: #7f94a7;
+}
+
+@keyframes search-border-pulse {
+  0%,
+  100% {
+    filter: blur(2px);
+    opacity: 0.64;
+  }
+  50% {
+    filter: blur(4px);
+    opacity: 1;
+  }
+}
+
+@keyframes search-beam-pulse {
+  0%,
+  100% {
+    opacity: 0.48;
+    transform: scaleX(0.72);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
 }
 
 .search-feedback {
@@ -853,8 +930,8 @@ onBeforeUnmount(() => {
   position: absolute;
   z-index: 4;
   top: clamp(10px, calc(var(--selected-city-top) - 48px), calc(100% - 164px));
-  /* 중앙 핀의 아이콘 폭과 겹치지 않도록 카드 시작점을 오른쪽으로 띄운다. */
-  left: clamp(10px, calc(var(--selected-city-left) + 42px), calc(100% - 206px));
+  /* 중앙 핀의 아이콘 폭과 안전 여백을 모두 비워, 카드가 핀을 관통하지 않게 한다. */
+  left: clamp(10px, calc(var(--selected-city-left) + 58px), calc(100% - 206px));
   width: clamp(164px, 13vw, 196px);
   padding: 10px;
   margin: 0;
@@ -1090,7 +1167,7 @@ button:focus-visible,
     top: clamp(8px, calc(var(--selected-city-top) - 46px), calc(100% - 156px));
     right: auto;
     bottom: auto;
-    left: clamp(8px, calc(var(--selected-city-left) + 38px), calc(100% - 188px));
+    left: clamp(8px, calc(var(--selected-city-left) + 52px), calc(100% - 188px));
     width: min(180px, 52vw);
     padding: 10px;
   }
