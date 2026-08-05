@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import { useConfigStore } from '../../../stores/configStore.js'
+import { useConfigStore } from '../../stores/configStore.js'
 
 defineProps({
   compact: {

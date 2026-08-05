@@ -1,6 +1,6 @@
 <script setup>
 import { RouterLink } from 'vue-router'
-import BuildEnvironmentInfo from '../components/practices/build_day4/BuildEnvironmentInfo.vue'
+import BuildEnvironmentInfo from '../components/weather/BuildEnvironmentInfo.vue'
 </script>
 
 <template>

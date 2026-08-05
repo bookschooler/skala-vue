@@ -13,9 +13,7 @@
     "lint": "run-s lint:*",
     "lint:oxlint": "oxlint src vite.config.js eslint.config.js",
     "lint:eslint": "eslint src vite.config.js eslint.config.js --cache",
-    "format": "prettier --write --experimental-cli src/",
-    "api": "node mock-api/server.js",
-    "dev:all": "node scripts/dev-all.js"
+    "format": "prettier --write --experimental-cli src/"
   },
   "dependencies": {
     "axios": "^1.18.1",
