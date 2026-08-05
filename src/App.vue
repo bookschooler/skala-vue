@@ -17,6 +17,7 @@ const showUtilityNavigation = computed(() => route.name !== 'WeatherHome')
       <div class="utility-navigation__links" aria-label="페이지 이동">
         <RouterLink to="/">홈</RouterLink>
         <RouterLink to="/forecast">장기 예보</RouterLink>
+        <RouterLink to="/community">여행 기록</RouterLink>
         <RouterLink to="/about">소개</RouterLink>
       </div>
 

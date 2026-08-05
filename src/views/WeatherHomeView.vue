@@ -325,6 +325,10 @@ onBeforeUnmount(() => {
       <RouterLink class="brand" to="/" aria-label="WEATHER FAIRY 홈">
         <span>WEATHER</span><strong>FAIRY</strong>
       </RouterLink>
+      <nav class="home-navigation" aria-label="주요 페이지 이동">
+        <RouterLink to="/forecast">장기 예보</RouterLink>
+        <RouterLink to="/community">여행 기록</RouterLink>
+      </nav>
       <div class="header-actions">
         <button
           class="unit-toggle"
@@ -495,6 +499,7 @@ onBeforeUnmount(() => {
 
 .home-header,
 .header-actions,
+.home-navigation,
 .favorite-strip,
 .weather-summary__header,
 .search-results button,
@@ -510,6 +515,32 @@ onBeforeUnmount(() => {
 
 .header-actions {
   gap: 9px;
+}
+
+.home-navigation {
+  gap: 4px;
+  margin-left: auto;
+  margin-right: 17px;
+}
+
+.home-navigation a {
+  padding: 9px 11px;
+  color: #9ab7c9;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.home-navigation a:hover,
+.home-navigation a:focus-visible,
+.home-navigation a.router-link-active {
+  color: #e9f8ff;
+  background: rgba(55, 152, 232, 0.14);
+  border-color: rgba(87, 201, 255, 0.42);
+  box-shadow: 0 0 14px rgba(34, 174, 255, 0.15);
+  outline: none;
 }
 
 .brand {
@@ -1013,6 +1044,13 @@ button:focus-visible,
   .home-header {
     align-items: flex-start;
   }
+  .home-navigation {
+    margin-right: 9px;
+  }
+  .home-navigation a {
+    padding: 8px 7px;
+    font-size: 12px;
+  }
   .favorite-toggle {
     width: 40px;
     min-height: 40px;
@@ -1052,6 +1090,9 @@ button:focus-visible,
   }
   .header-actions {
     gap: 5px;
+  }
+  .home-navigation a:first-child {
+    display: none;
   }
 }
 </style>
