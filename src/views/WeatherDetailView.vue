@@ -13,6 +13,7 @@ import {
   WindPower,
 } from '@element-plus/icons-vue'
 import { findCityById } from '../data/cityCatalog.js'
+import { fetchDetailHourlyForecast, isMeteoRequestCanceled } from '../services/openMeteoService.js'
 import { fetchWeatherBundle, isWeatherRequestCanceled } from '../services/openWeatherService.js'
 import { useConfigStore } from '../stores/configStore.js'
 import { useFavoriteStore } from '../stores/favoriteStore.js'
@@ -22,6 +23,7 @@ const route = useRoute()
 const configStore = useConfigStore()
 const favoriteStore = useFavoriteStore()
 const weatherBundle = ref(null)
+const hourlyForecast = ref(null)
 const isLoading = ref(false)
 const errorMessage = ref('')
 const isNotFound = ref(false)
@@ -53,16 +55,47 @@ const resolvedCity = computed(
 const currentWeather = computed(() => weatherBundle.value?.current ?? null)
 const isFavorite = computed(() => favoriteStore.isFavorite(resolvedCity.value?.id))
 const weatherVisual = (weatherCode) => getWeatherVisual(weatherCode)
+
+const getCityTimeParts = (timeZone) => {
+  try {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: timeZone || 'UTC',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      hourCycle: 'h23',
+    }).formatToParts(new Date())
+    const value = Object.fromEntries(parts.map((part) => [part.type, part.value]))
+    return { date: `${value.year}-${value.month}-${value.day}`, hour: Number(value.hour) }
+  } catch {
+    return getCityTimeParts('UTC')
+  }
+}
+
 const todayHourly = computed(() => {
-  const today = weatherBundle.value?.daily?.[0]?.date
+  const forecast = hourlyForecast.value
+  const today = getCityTimeParts(forecast?.city?.timezone).date
   if (!today) return []
-  return (weatherBundle.value?.hourly ?? [])
+  return (forecast?.hourly ?? [])
     .filter((hour) => hour.dateTime.startsWith(today))
     .slice(0, 24)
 })
-const hourlyIntervalLabel = computed(() =>
-  weatherBundle.value?.hourlyIntervalHours === 1 ? '1시간 간격' : '3시간 간격',
-)
+const hourlyIntervalLabel = computed(() => (todayHourly.value.length ? '1시간 간격' : ''))
+const currentUvIndex = computed(() => {
+  const forecast = hourlyForecast.value
+  if (!forecast) return null
+  const { date, hour } = getCityTimeParts(forecast.city.timezone)
+  const currentDateTime = `${date}T${String(hour).padStart(2, '0')}:00`
+  return forecast.hourly.find((item) => item.dateTime === currentDateTime)?.uvIndex ?? null
+})
+const detailDailyForecast = computed(() => {
+  const uvByDate = new Map((hourlyForecast.value?.daily ?? []).map((item) => [item.date, item.uvIndexMax]))
+  return (weatherBundle.value?.daily ?? []).map((item) => ({
+    ...item,
+    uvIndexMax: uvByDate.get(item.date) ?? null,
+  }))
+})
 
 const displayTemp = (temp) => {
   if (!Number.isFinite(Number(temp))) return '—'
@@ -111,6 +144,7 @@ const loadWeather = async () => {
   activeController?.abort()
   const currentRequestId = ++requestId
   weatherBundle.value = null
+  hourlyForecast.value = null
   errorMessage.value = ''
   const city = resolvedCity.value
   isNotFound.value = !city
@@ -122,10 +156,16 @@ const loadWeather = async () => {
   activeController = new AbortController()
   isLoading.value = true
   try {
-    const result = await fetchWeatherBundle(city, { signal: activeController.signal })
-    if (currentRequestId === requestId) weatherBundle.value = result
+    const [weatherResult, hourlyResult] = await Promise.all([
+      fetchWeatherBundle(city, { signal: activeController.signal }),
+      fetchDetailHourlyForecast(city, { signal: activeController.signal }),
+    ])
+    if (currentRequestId === requestId) {
+      weatherBundle.value = weatherResult
+      hourlyForecast.value = hourlyResult
+    }
   } catch (error) {
-    if (currentRequestId !== requestId || isWeatherRequestCanceled(error)) return
+    if (currentRequestId !== requestId || isWeatherRequestCanceled(error) || isMeteoRequestCanceled(error)) return
     errorMessage.value =
       '날씨 정보를 불러오지 못했습니다. 네트워크 연결을 확인한 뒤 다시 시도해 주세요.'
   } finally {
@@ -242,7 +282,7 @@ onBeforeUnmount(() => {
             <dt>
               <el-icon><Sunny /></el-icon> 자외선 지수
             </dt>
-            <dd>{{ displayUv(currentWeather.uvIndex) }}</dd>
+            <dd>{{ displayUv(currentUvIndex) }}</dd>
           </div>
         </dl>
       </section>
@@ -287,7 +327,7 @@ onBeforeUnmount(() => {
           <RouterLink :to="forecastRoute">16일 전체 예보 보기</RouterLink>
         </div>
         <div class="daily-grid">
-          <article v-for="forecast in weatherBundle.daily.slice(0, 5)" :key="forecast.date">
+          <article v-for="forecast in detailDailyForecast.slice(0, 5)" :key="forecast.date">
             <p>{{ formatDate(forecast.date) }}</p>
             <div class="daily-card__condition">
               <el-icon

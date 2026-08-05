@@ -14,10 +14,8 @@ const openWeatherClient = axios.create({
 
 const CURRENT_WEATHER_CACHE_TTL = 90 * 1000
 const CITY_SEARCH_CACHE_TTL = 10 * 60 * 1000
-const ONE_CALL_HOURLY_CACHE_TTL = 10 * 60 * 1000
 const currentWeatherCache = new Map()
 const citySearchCache = new Map()
-const oneCallHourlyCache = new Map()
 
 export class WeatherConfigError extends Error {
   constructor() {
@@ -220,36 +218,6 @@ const normalizeAirQuality = (data) => {
   }
 }
 
-// 5일 예보 API는 3시간 간격이며 UV를 제공하지 않는다. 상세 화면의 실제 1시간
-// 예보와 현재 UV는 같은 OpenWeather의 One Call 응답이 제공될 때만 이 함수로 정규화한다.
-export const normalizeOneCallHourly = (data) => {
-  const timezoneOffset = Number(data?.timezone_offset ?? 0)
-  const hourly = (Array.isArray(data?.hourly) ? data.hourly : [])
-    .filter(
-      (item) =>
-        isFiniteNumber(item?.dt) && isFiniteNumber(item?.temp) && Array.isArray(item?.weather),
-    )
-    .map((item) => {
-      const { dateTime } = localDateParts(item.dt, timezoneOffset)
-      return {
-        dateTime,
-        temp: Number(item.temp),
-        feelsLike: Number(item.feels_like ?? item.temp),
-        precipitationProbability: Math.round(Number(item.pop ?? 0) * 100),
-        precipitation: Number(item.rain?.['1h'] ?? item.snow?.['1h'] ?? 0),
-        wind: Math.round(Number(item.wind_speed ?? 0) * 3.6),
-        uvIndex: isFiniteNumber(item.uvi) ? Number(item.uvi) : null,
-        weatherCode: toWeatherVisualCode(item.weather[0]?.id, item.clouds),
-        status: weatherStatus(item.weather[0]),
-      }
-    })
-
-  return {
-    hourly,
-    currentUvIndex: isFiniteNumber(data?.current?.uvi) ? Number(data.current.uvi) : null,
-  }
-}
-
 const normalizeForecast = (data) => {
   const timezoneOffset = Number(data?.city?.timezone ?? 0)
   const items = Array.isArray(data?.list) ? data.list : []
@@ -307,28 +275,6 @@ const normalizeForecast = (data) => {
 const currentWeatherCacheKey = (city) =>
   `${Number(city.lat).toFixed(3)},${Number(city.lon).toFixed(3)}`
 
-const fetchOneCallHourly = async (city, { apiKey, signal } = {}) => {
-  const cacheKey = currentWeatherCacheKey(city)
-  const cached = oneCallHourlyCache.get(cacheKey)
-  if (cached && Date.now() - cached.savedAt < ONE_CALL_HOURLY_CACHE_TTL) return cached.forecast
-
-  const { data } = await openWeatherClient.get('/data/3.0/onecall', {
-    params: {
-      lat: city.lat,
-      lon: city.lon,
-      appid: apiKey,
-      exclude: 'minutely,daily,alerts',
-      units: 'metric',
-      lang: 'kr',
-    },
-    signal,
-  })
-  const forecast = normalizeOneCallHourly(data)
-  if (!forecast.hourly.length) throw new Error('OpenWeather 1시간 예보 응답 형식이 올바르지 않습니다.')
-  oneCallHourlyCache.set(cacheKey, { forecast, savedAt: Date.now() })
-  return forecast
-}
-
 export const fetchCurrentWeather = async (city, { signal } = {}) => {
   assertCoordinates(city)
   const cacheKey = currentWeatherCacheKey(city)
@@ -356,7 +302,7 @@ export const fetchWeatherBundle = async (city, { signal } = {}) => {
   assertCoordinates(city)
   const apiKey = getApiKey()
   const sharedParams = { lat: city.lat, lon: city.lon, appid: apiKey }
-  const [currentResponse, forecastResponse, airQualityResponse, oneCallForecast] = await Promise.all([
+  const [currentResponse, forecastResponse, airQualityResponse] = await Promise.all([
     openWeatherClient.get('/data/2.5/weather', {
       params: { ...sharedParams, units: 'metric', lang: 'kr' },
       signal,
@@ -368,25 +314,18 @@ export const fetchWeatherBundle = async (city, { signal } = {}) => {
     openWeatherClient
       .get('/data/2.5/air_pollution', { params: sharedParams, signal })
       .catch(() => null),
-    // One Call은 별도 구독 권한이 필요한 OpenWeather API다. 권한이 없더라도 기존
-    // 현재 날씨·5일 예보가 실패하지 않도록 3시간 예보로 안전하게 대체한다.
-    fetchOneCallHourly(city, { apiKey, signal }).catch((error) => {
-      if (isWeatherRequestCanceled(error)) throw error
-      return null
-    }),
   ])
   const fallbackForecast = normalizeForecast(forecastResponse.data)
   const current = {
     ...normalizeCurrent(city, currentResponse.data),
     airQuality: normalizeAirQuality(airQualityResponse?.data),
-    uvIndex: oneCallForecast?.currentUvIndex ?? null,
   }
 
   return {
     city,
     current,
-    hourly: oneCallForecast?.hourly?.length ? oneCallForecast.hourly : fallbackForecast.hourly,
-    hourlyIntervalHours: oneCallForecast?.hourly?.length ? 1 : 3,
+    hourly: fallbackForecast.hourly,
+    hourlyIntervalHours: 3,
     daily: fallbackForecast.daily,
     fetchedAt: new Date().toISOString(),
   }
