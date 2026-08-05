@@ -3,7 +3,7 @@ import test from 'node:test'
 
 import { defaultFavoriteCities } from '../src/data/cityCatalog.js'
 import { normalizeOneCallHourly, searchCities } from '../src/services/openWeatherService.js'
-import { toMapPosition, toMapViewportPosition } from '../src/utils/mapPosition.js'
+import { mapCountries, toMapPosition, toMapViewportPosition } from '../src/utils/mapPosition.js'
 
 test('해외 국가명만 입력하면 대표 도시를 최대 다섯 개 반환한다', async () => {
   const cities = await searchCities('미국', { scope: 'global' })
@@ -60,7 +60,7 @@ test('OpenWeather One Call 시간별 응답은 도시 시간대의 1시간 예�
   })
 })
 
-test('시작 도시 전체 핀은 Equal Earth 배경과 같은 전역 투영·cover 좌표를 따른다', () => {
+test('시작 도시 전체 핀은 실제 SVG 세계지도와 같은 전역 투영·cover 좌표를 따른다', () => {
   const positions = Object.fromEntries(
     defaultFavoriteCities.map((city) => [
       city.name,
@@ -69,34 +69,34 @@ test('시작 도시 전체 핀은 Equal Earth 배경과 같은 전역 투영·co
   )
 
   assert.deepEqual(positions, {
-    서울: { left: '77.79%', top: '36.95%' },
-    도쿄: { left: '81.52%', top: '37.95%' },
-    파리: { left: '44.97%', top: '31.24%' },
-    뉴욕: { left: '25.30%', top: '35.29%' },
-    런던: { left: '44.36%', top: '30.00%' },
-    방콕: { left: '73.38%', top: '50.46%' },
-    시드니: { left: '84.97%', top: '78.48%' },
-    로마: { left: '47.60%', top: '34.68%' },
+    서울: { left: '80.71%', top: '22.15%' },
+    도쿄: { left: '84.15%', top: '23.44%' },
+    파리: { left: '50.53%', top: '14.86%' },
+    뉴욕: { left: '32.44%', top: '20.04%' },
+    런던: { left: '49.97%', top: '13.26%' },
+    방콕: { left: '76.65%', top: '39.45%' },
+    시드니: { left: '87.32%', top: '75.30%' },
+    로마: { left: '52.94%', top: '19.26%' },
   })
 })
 
-test('대한민국·미국·프랑스·브라질·호주의 도시 15개가 동일한 전역 투영으로 렌더링된다', () => {
+test('대륙별 15개 도시는 SVG 국가 윤곽과 같은 투영의 고정 좌표로 렌더링된다', () => {
   const cities = [
-    ['서울', 37.5665, 126.978],
-    ['부산', 35.1796, 129.0756],
-    ['제주', 33.4996, 126.5312],
-    ['뉴욕', 40.7128, -74.006],
-    ['시카고', 41.8781, -87.6298],
-    ['로스앤젤레스', 34.0522, -118.2437],
-    ['파리', 48.8566, 2.3522],
-    ['리옹', 45.764, 4.8357],
-    ['니스', 43.7102, 7.262],
-    ['상파울루', -23.5505, -46.6333],
-    ['리우데자네이루', -22.9068, -43.1729],
-    ['브라질리아', -15.7939, -47.8828],
-    ['시드니', -33.8688, 151.2093],
-    ['멜버른', -37.8136, 144.9631],
-    ['브리즈번', -27.4698, 153.0251],
+    ['서울', 37.5665, 126.978, '410'],
+    ['부산', 35.1796, 129.0756, '410'],
+    ['제주', 33.4996, 126.5312, '410'],
+    ['뉴욕', 40.7128, -74.006, '840'],
+    ['시카고', 41.8781, -87.6298, '840'],
+    ['로스앤젤레스', 34.0522, -118.2437, '840'],
+    ['파리', 48.8566, 2.3522, '250'],
+    ['리옹', 45.764, 4.8357, '250'],
+    ['니스', 43.7102, 7.262, '250'],
+    ['상파울루', -23.5505, -46.6333, '076'],
+    ['리우데자네이루', -22.9068, -43.1729, '076'],
+    ['브라질리아', -15.7939, -47.8828, '076'],
+    ['시드니', -33.8688, 151.2093, '036'],
+    ['멜버른', -37.8136, 144.9631, '036'],
+    ['브리즈번', -27.4698, 153.0251, '036'],
   ]
 
   const positions = Object.fromEntries(
@@ -104,25 +104,47 @@ test('대한민국·미국·프랑스·브라질·호주의 도시 15개가 동�
   )
 
   assert.deepEqual(positions, {
-    서울: { left: '74.64%', top: '36.95%' },
-    부산: { left: '75.53%', top: '38.22%' },
-    제주: { left: '75.20%', top: '39.14%' },
-    뉴욕: { left: '28.10%', top: '35.29%' },
-    시카고: { left: '25.14%', top: '34.69%' },
-    로스앤젤레스: { left: '16.92%', top: '38.84%' },
-    파리: { left: '45.54%', top: '31.24%' },
-    리옹: { left: '46.10%', top: '32.74%' },
-    니스: { left: '46.66%', top: '33.76%' },
-    상파울루: { left: '33.42%', top: '72.69%' },
-    리우데자네이루: { left: '34.26%', top: '72.32%' },
-    브라질리아: { left: '32.84%', top: '68.17%' },
-    시드니: { left: '81.01%', top: '78.48%' },
-    멜버른: { left: '78.78%', top: '80.61%' },
-    브리즈번: { left: '82.55%', top: '74.93%' },
+    서울: { left: '80.71%', top: '24.84%' },
+    부산: { left: '81.64%', top: '26.32%' },
+    제주: { left: '81.29%', top: '27.38%' },
+    뉴욕: { left: '32.44%', top: '22.93%' },
+    시카고: { left: '29.37%', top: '22.24%' },
+    로스앤젤레스: { left: '20.84%', top: '27.03%' },
+    파리: { left: '50.53%', top: '18.25%' },
+    리옹: { left: '51.11%', top: '19.98%' },
+    니스: { left: '51.69%', top: '21.16%' },
+    상파울루: { left: '37.96%', top: '66.16%' },
+    리우데자네이루: { left: '38.83%', top: '65.73%' },
+    브라질리아: { left: '37.36%', top: '60.93%' },
+    시드니: { left: '87.32%', top: '72.86%' },
+    멜버른: { left: '85.01%', top: '75.31%' },
+    브리즈번: { left: '88.91%', top: '68.75%' },
   })
+
+  for (const [name, countryId] of [
+    ['대한민국', '410'],
+    ['미국', '840'],
+    ['프랑스', '250'],
+    ['브라질', '076'],
+    ['오스트레일리아', '036'],
+  ]) {
+    const country = mapCountries.find((item) => item.id === countryId)
+    assert.ok(country?.path.length > 100, `${name} 국가 윤곽 SVG 경로가 있어야 한다`)
+  }
 })
 
-test('서울과 시드니도 화면 비율이 달라져도 이미지와 동일한 cover 좌표계를 사용한다', () => {
+test('대한민국 윤곽은 SVG에 존재하고, 서울·경주는 한 투영 안에서 인접하게 계산된다', () => {
+  const southKorea = mapCountries.find((country) => country.id === '410')
+  assert.equal(southKorea?.name, 'South Korea')
+  assert.ok(southKorea.path.length > 100)
+
+  const seoul = toMapPosition({ lat: 37.5665, lon: 126.978 })
+  const gyeongju = toMapPosition({ lat: 35.8562, lon: 129.2247 })
+  assert.deepEqual(seoul, { left: '80.71%', top: '24.84%' })
+  assert.deepEqual(gyeongju, { left: '81.56%', top: '25.90%' })
+})
+
+test('서울과 시드니도 화면 비율이 달라져도 SVG와 동일한 cover 좌표계를 사용한다', () => {
   const viewport = { width: 1280, height: 800 }
   const positions = Object.fromEntries(
     ['서울', '시드니'].map((name) => {
@@ -132,7 +154,7 @@ test('서울과 시드니도 화면 비율이 달라져도 이미지와 동일�
   )
 
   assert.deepEqual(positions, {
-    서울: { left: '86.97%', top: '36.95%' },
-    시드니: { left: '96.52%', top: '78.48%' },
+    서울: { left: '86.91%', top: '24.84%' },
+    시드니: { left: '94.86%', top: '72.86%' },
   })
 })

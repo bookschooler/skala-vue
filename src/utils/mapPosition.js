@@ -1,59 +1,52 @@
-// 배경 PNG의 국가 윤곽은 직사각형 위경도 좌표가 아니라 Equal Earth 계열의 전역 투영을 따른다.
-// 도시별 좌표를 따로 보정하면 신규 검색 도시마다 오차가 재발하므로, 모든 도시를 하나의
-// 지리 투영식으로 변환한 뒤 이미지 안의 투영 영역으로만 맞춘다.
-const equalEarthProjection = (latitude, longitude) => {
-  const a1 = 1.340264
-  const a2 = -0.081106
-  const a3 = 0.000893
-  const a4 = 0.003796
-  const latitudeRadians = (latitude * Math.PI) / 180
-  const longitudeRadians = (longitude * Math.PI) / 180
-  const theta = Math.asin((Math.sqrt(3) / 2) * Math.sin(latitudeRadians))
-  const thetaSquared = theta ** 2
-  const thetaSixth = thetaSquared ** 3
-  const denominator =
-    3 * (a1 + 3 * a2 * thetaSquared + 7 * a3 * thetaSixth + 9 * a4 * thetaSixth * thetaSquared)
+import countriesTopology from 'world-atlas/countries-10m.json' with { type: 'json' }
+import { geoEqualEarth, geoGraticule10, geoPath } from 'd3-geo'
+import { feature } from 'topojson-client'
 
-  return {
-    x: (2 * Math.sqrt(3) * longitudeRadians * Math.cos(theta)) / denominator,
-    y: a1 * theta + a2 * theta ** 3 + a3 * theta ** 7 + a4 * theta ** 9,
-  }
-}
+// 국가 윤곽과 도시 핀에 반드시 같은 투영을 적용한다. Natural Earth의 위·경도
+// TopoJSON을 SVG 경로로 바꾸고, OpenWeather가 돌려주는 [경도, 위도]도 동일한
+// Equal Earth 투영으로 변환하므로 배경 그림과 핀의 좌표계가 분리되지 않는다.
+export const mapViewBox = Object.freeze({ width: 1000, height: 520 })
+const mapPadding = 16
+const worldFeatureCollection = feature(countriesTopology, countriesTopology.objects.countries)
+const worldProjection = geoEqualEarth().fitExtent(
+  [
+    [mapPadding, mapPadding],
+    [mapViewBox.width - mapPadding, mapViewBox.height - mapPadding],
+  ],
+  worldFeatureCollection,
+)
+const pathGenerator = geoPath(worldProjection)
 
-// 배경 이미지 안에서 Equal Earth 도형이 차지하는 실제 영역을 한 번만 보정한 값이다.
-// 이 값은 도시 이름과 무관하므로 API로 들어오는 임의의 좌표에도 같은 규칙이 적용된다.
-const mapProjectionBounds = Object.freeze({
-  centerLeft: 45.03,
-  centerTop: 58.71,
-  horizontalScale: 17.24,
-  verticalScale: 29.75,
-})
+export const mapCountries = Object.freeze(
+  worldFeatureCollection.features.map((country) =>
+    Object.freeze({
+      id: String(country.id),
+      name: country.properties?.name ?? '',
+      path: pathGenerator(country),
+    }),
+  ),
+)
 
-const mapImageSize = Object.freeze({ width: 1942, height: 809 })
-const isCoordinate = (value) => Number.isFinite(Number(value))
-const clamp = (value, minimum, maximum) => Math.min(Math.max(value, minimum), maximum)
+export const mapGraticulePath = pathGenerator(geoGraticule10())
+
+const isLatitude = (value) => Number.isFinite(Number(value)) && Number(value) >= -90 && Number(value) <= 90
+const isLongitude = (value) => Number.isFinite(Number(value)) && Number(value) >= -180 && Number(value) <= 180
 
 export const toMapPosition = (city) => {
   const latitude = Number(city?.lat)
   const longitude = Number(city?.lon)
-  if (!isCoordinate(latitude) || !isCoordinate(longitude)) return { left: '50%', top: '50%' }
 
-  const { x, y } = equalEarthProjection(latitude, longitude)
-  const left = clamp(
-    mapProjectionBounds.centerLeft + x * mapProjectionBounds.horizontalScale,
-    4,
-    96,
-  )
-  const top = clamp(mapProjectionBounds.centerTop - y * mapProjectionBounds.verticalScale, 6, 94)
+  if (!isLatitude(latitude) || !isLongitude(longitude)) return { left: '50%', top: '50%' }
 
+  const [x, y] = worldProjection([longitude, latitude])
   return {
-    left: `${left.toFixed(2)}%`,
-    top: `${top.toFixed(2)}%`,
+    left: `${((x / mapViewBox.width) * 100).toFixed(2)}%`,
+    top: `${((y / mapViewBox.height) * 100).toFixed(2)}%`,
   }
 }
 
-// CSS `object-fit: cover`가 중앙을 기준으로 확대·크롭한 뒤의 부모 요소 좌표를 구한다.
-// 이미지와 핀이 항상 같은 변환을 거치므로 화면 비율이 바뀌어도 서로 어긋나지 않는다.
+// SVG의 preserveAspectRatio="xMidYMid slice"와 동일한 중앙 crop 계산이다.
+// HTML 버튼 핀과 SVG 국가 윤곽이 화면 비율이 바뀌어도 같은 위치를 사용한다.
 export const toMapViewportPosition = (sourcePosition, viewport) => {
   const sourceLeft = Number.parseFloat(sourcePosition?.left)
   const sourceTop = Number.parseFloat(sourcePosition?.top)
@@ -64,9 +57,9 @@ export const toMapViewportPosition = (sourcePosition, viewport) => {
     return sourcePosition ?? { left: '50%', top: '50%' }
   }
 
-  const scale = Math.max(width / mapImageSize.width, height / mapImageSize.height)
-  const renderedWidth = mapImageSize.width * scale
-  const renderedHeight = mapImageSize.height * scale
+  const scale = Math.max(width / mapViewBox.width, height / mapViewBox.height)
+  const renderedWidth = mapViewBox.width * scale
+  const renderedHeight = mapViewBox.height * scale
   const left = ((renderedWidth * (sourceLeft / 100) + (width - renderedWidth) / 2) / width) * 100
   const top = ((renderedHeight * (sourceTop / 100) + (height - renderedHeight) / 2) / height) * 100
 
