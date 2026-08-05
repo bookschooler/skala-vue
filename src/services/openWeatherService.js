@@ -184,8 +184,18 @@ export const normalizeWeatherStatus = (weather) => {
   if (weatherId === 802 || weatherId === 803) return '흐림'
   if (weatherId === 804) return '완전흐림'
 
+  // OpenWeather의 한국어 번역에는 "실 비"처럼 서비스에서 쓰지 않는 띄어쓴
+  // 표현이 섞여 있다. 네이버 날씨에서 익숙한 용어로 강수 단계를 고정한다.
+  if (weatherId >= 300 && weatherId < 400) return '이슬비'
+  if (weatherId === 500) return '약한 비'
+  if (weatherId >= 501 && weatherId <= 504) return '비'
+  if (weatherId === 511) return '어는 비'
+  if (weatherId >= 520 && weatherId < 600) return '소나기'
+  if (weatherId >= 600 && weatherId < 700) return '눈'
+  if (weatherId >= 700 && weatherId < 800) return '안개'
+
   const status = weather?.description?.trim() || weather?.main?.trim() || ''
-  if (status === '온흐림') return '완전흐림'
+  if (status === '온흐림' || status === '실 비' || status === '실비') return '완전흐림'
   return status || '날씨 정보 없음'
 }
 

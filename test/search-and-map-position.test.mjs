@@ -146,6 +146,11 @@ test('OpenWeather 구름 상태는 아이콘 단계와 일대일로 같은 용�
   assert.notEqual(getWeatherVisual(4).icon, getWeatherVisual(3).icon)
 })
 
+test('OpenWeather의 실 비 번역은 네이버 날씨 용어인 이슬비로 정규화한다', () => {
+  assert.equal(normalizeWeatherStatus({ id: 300, description: '실 비' }), '이슬비')
+  assert.equal(normalizeWeatherStatus({ id: 310, description: '강한 이슬비' }), '이슬비')
+})
+
 test('처음 방문한 사용자의 즐겨찾기는 대표 세계 도시 7개로 시작한다', () => {
   assert.deepEqual(
     defaultFavoriteCities.map((city) => city.name),

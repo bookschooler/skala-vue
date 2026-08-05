@@ -91,7 +91,9 @@ const upcomingHourly = computed(() => {
   return getUpcomingHourly(forecast?.hourly, startDateTime)
 })
 const hourlyIntervalLabel = computed(() =>
-  upcomingHourly.value.length ? `1시간 간격 · 앞으로 24시간` : '',
+  upcomingHourly.value.length
+    ? `${hourlyForecast.value?.hourlyIntervalHours ?? 1}시간 간격 · 앞으로 24시간`
+    : '',
 )
 const currentUvIndex = computed(() => {
   const forecast = hourlyForecast.value
@@ -182,10 +184,25 @@ const loadWeather = async () => {
   activeController = new AbortController()
   isLoading.value = true
   try {
-    const [weatherResult, hourlyResult] = await Promise.all([
+    // 상세 시간별 예보 제공처가 일시적으로 실패해도 OpenWeather의 3시간 예보로
+    // 상세 화면 전체가 에러가 되지 않게 한다. 현재 날씨·5일 예보는 계속 표시한다.
+    const [weatherResponse, hourlyResponse] = await Promise.allSettled([
       fetchWeatherBundle(city, { signal: activeController.signal }),
       fetchDetailHourlyForecast(city, { signal: activeController.signal }),
     ])
+    if (weatherResponse.status === 'rejected') throw weatherResponse.reason
+
+    const weatherResult = weatherResponse.value
+    const hourlyResult =
+      hourlyResponse.status === 'fulfilled'
+        ? hourlyResponse.value
+        : {
+            city: weatherResult.city,
+            hourly: weatherResult.hourly,
+            daily: [],
+            hourlyIntervalHours: weatherResult.hourlyIntervalHours,
+            fetchedAt: weatherResult.fetchedAt,
+          }
     if (currentRequestId === requestId) {
       weatherBundle.value = weatherResult
       hourlyForecast.value = hourlyResult
