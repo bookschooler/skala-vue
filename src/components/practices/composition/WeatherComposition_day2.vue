@@ -1,7 +1,9 @@
 <script setup>
-import { computed, ref, watch, watchEffect } from 'vue'
+import { computed, reactive, ref, watch, watchEffect } from 'vue'
 
-const weatherList = ref([
+// 배열 항목의 속성까지 반응형으로 추적하는 예시: 검색어·선택값은 ref로,
+// 날씨 목록은 reactive로 관리해 두 API를 함께 실습한다.
+const weatherList = reactive([
   { id: 'city_01', name: '서울', temp: 28, status: '맑음' },
   { id: 'city_02', name: '성남', temp: 27, status: '구름' },
   { id: 'city_03', name: '부산', temp: 26, status: '구름' },
@@ -16,10 +18,10 @@ const filteredWeatherList = computed(() => {
   const query = searchQuery.value.trim()
 
   if (!query) {
-    return weatherList.value
+    return weatherList
   }
 
-  return weatherList.value.filter((weather) => weather.name.includes(query))
+  return weatherList.filter((weather) => weather.name.includes(query))
 })
 
 watch(selectedCityInfo, (newInfo, oldInfo) => {

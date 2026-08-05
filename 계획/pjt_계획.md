@@ -27,6 +27,32 @@
 | R8  |        250 | 메뉴와 활용 API를 추가해 과제 확장                                          | OpenWeather 검색·현재·5일 예보와 `/forecast`의 Open-Meteo 장기 예보를 브라우저에서 확인함 |
 | R9  |        274 | ESLint, 환경 변수·Git 제외, `dist` GitHub Pages 배포                        | GitHub Actions 성공 및 실제 Pages 동작 확인 완료                                          |
 
+### 제출 요구사항·채점 기준 반영 — 2026-08-05
+
+아래 표는 PDF의 일차별 R1~R9와 별개로, 제출 시 직접 확인되는 요구사항과 채점 기준을 같은 계획에 합친 것이다. `[x]`는 코드·배포·브라우저 근거를 확인한 상태이고, 최종 제출 직전에는 배포본 기준으로 한 번 더 확인한다.
+
+| 제출 요구사항 | 현재 판정 | 확인 근거 |
+| --- | --- | --- |
+| Vue 컴포넌트 3개 이상 분리 | [x] | 최종 화면의 `FavoriteMap`·`UnitToggler`와 View, 그리고 실습용 `WeatherParent`·`BaseDashboardCard`·`SearchBar`·`WeatherCard`를 분리했다. |
+| `ref`·`reactive`·`computed` 활용 | [x] | 최종 View의 검색·로딩 상태는 `ref`·`computed`, Composition 실습의 `weatherList`는 `reactive`로 관리한다. |
+| Props·Emits 데이터 전달 | [x] | `FavoriteMap`, `SearchBar`, `WeatherCard`가 `defineProps`·`defineEmits`로 부모와 통신한다. |
+| Vue Router 화면 이동 | [x] | Hash Router, 지연 로딩, 도시 동적 상세·소개·16일 예보·404 경로를 제공한다. |
+| Pinia 상태 관리 | [x] | `configStore`의 온도 단위와 `favoriteStore`의 즐겨찾기를 전역·영속 상태로 사용한다. |
+| Axios API 호출 | [x] | `openWeatherService`와 `openMeteoService`가 Axios 클라이언트로 날씨 API를 호출한다. |
+| 로딩·오류 상태 | [x] | 홈·상세·16일 예보에 Skeleton, 오류 안내, 재시도·빈 상태를 제공한다. |
+| ESLint 오류 없이 빌드 | [x] | `npm run lint`, `npm run build:production`을 통과하고 Pages 빌드도 성공했다. |
+
+| 평가 항목 | 배점 | 제출 전 확인 방법 | 현재 판정 |
+| --- | ---: | --- | --- |
+| GitHub 저장소 및 Pages 배포 | 10 | Public 저장소와 Pages URL에 로그인 없이 접속 | [x] 저장소 `https://github.com/bookschooler/skala-vue`, Pages `https://bookschooler.github.io/skala-vue/` |
+| 요구 기능 정상 작동 | 35 | Pages에서 검색 → 도시 선택 → 상세 → 16일 예보를 직접 실행 | [x] `뉴욕` 검색·선택, 실제 현재 날씨, 상세·16일 예보·404를 배포본에서 확인함 |
+| Vue 문법 활용 | 25 | 저장소에서 반응형 상태, 반복·조건 렌더링, Props·Emits를 검사 | [x] R1~R3 실습 원본과 최종 화면 소스에 근거가 있음 |
+| 컴포넌트 설계 | 10 | 분리 단위와 재사용성, 부모-자식 데이터 흐름을 검사 | [x] 지도·단위 전환·검색·카드를 책임별로 분리함 |
+| Router·Pinia·Axios | 10 | 라우트, Store, API 서비스의 실제 사용 여부를 검사 | [x] R4~R6 구현과 배포 동작으로 확인함 |
+| 코드 품질·완성도 | 10 | 구조·가독성·오류 처리·정적 검사 확인 | [x] 서비스·Store·View 분리, 요청 취소, 오류·재시도, lint/build을 갖춤 |
+
+> 주의: 상세 화면의 정확한 1시간 예보·현재 UV는 OpenWeather One Call 권한이 있어야 실제 값으로 표시된다. 권한이 없으면 기존 5일 API의 3시간 예보로 안전하게 대체하며, 이 경우 OpenWeather 계정에서 One Call 권한을 활성화한 뒤 배포본을 다시 확인한다.
+
 ## 2. PDF 필수 요구사항
 
 ### R1. 날씨 Mockup - 98페이지
@@ -101,10 +127,10 @@
 | `src/App.vue`                                                      | 상세·예보·소개 화면의 공통 RouterLink 메뉴, `RouterView`                       | R4, R8                 |
 | `src/router/index.js`                                              | Hash Router, Lazy Loading, 동적 상세, 404, 예보 경로                           | R4, R8, R9             |
 | `src/views/WeatherHomeView.vue`                                    | 국내/해외 검색, 현재 날씨, 지도 이동·핀, 즐겨찾기, 상단 단위 전환, 재시도 상태 | R1, R2, R4, R5, R6, R7 |
-| `src/views/WeatherDetailView.vue`                                  | 좌표/도시 ID 기반 상세 날씨, 5일 예보, 단위·즐겨찾기 전환                      | R4, R5, R6, R7         |
-| `src/views/WeatherForecastView.vue`                                | 즐겨찾기 도시 선택, 최대 16일 예보, 요청 취소·오류·빈 상태                     | R5, R7, R8             |
+| `src/views/WeatherDetailView.vue`                                  | 좌표/도시 ID 기반 상세 날씨, 1시간/대체 3시간 예보, 5일 예보, 단위·즐겨찾기 전환 | R4, R5, R6, R7         |
+| `src/views/WeatherForecastView.vue`                                | 최대 16일 일별 예보, 요청 취소·오류·빈 상태 (하단 시간대 프레임 없음)           | R5, R7, R8             |
 | `src/services/openMeteoService.js`                                 | Axios 16일 일별·시간별·UV 응답 정규화                                          | R8                     |
-| `src/services/openWeatherService.js`                               | Axios Geocoding·현재·5일/3시간 예보·대기질 응답 정규화                         | R6, R8                 |
+| `src/services/openWeatherService.js`                               | Axios Geocoding·현재·5일/3시간·대기질·One Call 1시간 예보/UV 응답 정규화       | R6, R8                 |
 | `src/stores/favoriteStore.js`                                      | 즐겨찾기 최대 12개·중복 방지·localStorage 영속화                               | 개선 기능              |
 | `src/stores/configStore.js`                                        | 전역 온도 단위 상태·Getter·Action                                              | R5                     |
 | `src/components/practices/store_day3_2/UnitToggler.vue`            | 공통 단위 전환 UI                                                              | R5, R7                 |
@@ -152,16 +178,17 @@
 
 1. **시연 범위:** Day 1~3의 원본 실습 파일은 보존만 하고, 제출·발표에서는 최종 통합 화면만 직접 시연한다.
 2. **도시 검색·현재·상세 단기 예보:** [OpenWeather Geocoding API](https://openweathermap.org/api/geocoding-api)의 `GET /geo/1.0/direct`로 좌표를 찾고, Current Weather·[5 day / 3 hour Forecast](https://openweathermap.org/forecast5)·Air Pollution API를 좌표로 요청한다. 해외 탭은 `KR` 결과를 제외한다.
-3. **16일 예보와 실제 UV:** [Open-Meteo Forecast API](https://open-meteo.com/en/docs)의 16일 일별·시간별·`uv_index`를 좌표와 `timezone=auto`로 요청한다. OpenWeather 기본 현재/5일 API는 UV를 제공하지 않으므로 상세의 결측 UV는 `—`로 표시하고, 16일 예보에서만 실제 UV를 제공한다.
-4. **비용·조건:** OpenWeather 요청에는 환경 변수 키가 필요하며, Open-Meteo는 16일 예보·UV 용도로만 쓴다. 상업 공개·운영으로 바뀌면 두 API의 최신 라이선스와 요청 제한을 다시 확인한다.
-5. **실제 실행 API:** 홈의 국내·해외 검색과 현재 날씨, 상세의 현재·5일·대기질은 Axios를 통해 OpenWeather로 요청한다. `/forecast`의 전체 16일 예보·시간별·UV만 Open-Meteo로 요청한다.
+3. **상세 1시간 예보·현재 UV:** OpenWeather의 [One Call API 3.0](https://openweathermap.org/api/one-call-3)에서 48시간 `hourly`와 현재 `uvi`를 요청한다. 이 API는 별도 One Call 구독이 필요하므로, 권한 오류 시 상세 화면은 기존 5일 API의 3시간 예보를 유지하고 UV는 `—`로 명확히 표시한다.
+4. **16일 전체 예보·UV:** [Open-Meteo Forecast API](https://open-meteo.com/en/docs)의 16일 일별·시간별·`uv_index`는 `/forecast` 화면에만 요청한다. 이 화면은 일별 카드만 보여 주며, 하단 시간대 프레임은 두지 않는다.
+5. **비용·조건:** OpenWeather 요청에는 환경 변수 키가 필요하며, Open-Meteo는 16일 예보·UV 용도로만 쓴다. 상업 공개·운영으로 바뀌면 두 API의 최신 라이선스와 요청 제한을 다시 확인한다.
+6. **실제 실행 API:** 홈의 국내·해외 검색과 현재 날씨, 상세의 현재·5일·대기질·1시간 예보는 Axios를 통해 OpenWeather로 요청한다. `/forecast`의 전체 16일 예보·UV만 Open-Meteo로 요청한다.
 
 ## 5. 이후 구현 설계
 
 ### 상태와 데이터 흐름
 
 ```text
-OpenWeather Geocoding + Current + 5일/3시간 + Air Pollution
+OpenWeather Geocoding + Current + 5일/3시간 + Air Pollution + One Call 1시간/UV
         ↓
 openWeatherService.js → 홈 / 상세 View의 ref 상태
         ↓
@@ -177,7 +204,7 @@ computed: 선택 도시 · 날짜 · 활동 · 시간대별 필터 · 적합도 
 - 국내 고정 도시는 기존 `cityCatalog`을 유지한다. 해외 검색은 OpenWeather Geocoding 결과를 `{ id, name, country, countryCode, lat, lon, timezone }`로 정규화한다. 이후 현재 날씨·예보 요청은 도시명 대신 좌표를 우선 사용한다.
 - `favoriteCities`: 국내 고정 도시는 ID만, 해외 도시는 최소 도시 메타데이터까지 Pinia Store와 `localStorage`에 저장한다.
 - `selectedPlanDate`, `selectedActivity`, `selectedMode`: 주말 계획 화면의 반응형 입력 상태다.
-- `hourlyForecasts`: 16일 전체 예보 화면은 Open-Meteo의 시간별 원본을, 상세 화면은 OpenWeather 5일/3시간 원본을 각각 화면에 필요한 형태로 정규화해 보관한다.
+- `hourlyForecasts`: 상세 화면은 OpenWeather One Call의 1시간 원본을 우선 사용하고, 권한이 없을 때만 5일/3시간 원본으로 대체한다. 16일 전체 예보는 Open-Meteo의 일별 원본만 화면에 표시한다.
 - `activityScore`: 강수확률, 강수량, 기온 범위, 풍속을 기준으로 0~100점으로 계산한다. 점수 기준과 문구는 코드 상수로 공개해 발표 때 설명 가능하게 한다.
 - API 요청은 현재처럼 `AbortController`와 요청 ID를 유지해 도시를 빨리 바꿔도 이전 응답이 최신 화면을 덮지 않게 한다.
 - 즐겨찾기는 최대 개수를 정하고, 중복 ID·손상된 `localStorage` 값·저장 실패를 안전하게 처리한다. 동일 도시의 요청은 짧은 캐시 TTL을 두어 API 호출을 불필요하게 반복하지 않는다.
@@ -189,7 +216,7 @@ computed: 선택 도시 · 날짜 · 활동 · 시간대별 필터 · 적합도 
 | -------------------------------------------------------------------- | ------------------------------------------------------- |
 | `src/stores/favoriteStore.js`                                        | 즐겨찾기 ID 추가·삭제·영속화                            |
 | `src/services/openMeteoService.js`                                   | 좌표 기반 16일·시간별 `uv_index` 요청·정규화            |
-| `src/services/openWeatherService.js`                                 | Geocoding·현재·5일/3시간 예보·대기질의 강수·시간 정규화 |
+| `src/services/openWeatherService.js`                                 | Geocoding·현재·5일/3시간 예보·대기질·One Call 1시간/UV 정규화 |
 | `src/composables/useWeatherPlanner.js`                               | 날짜·활동별 예보 필터와 적합도 계산                     |
 | `src/data/indoorRecommendations.js`                                  | 비 오는 날 도시별 실내 대안 정적 데이터                 |
 | `src/views/WeatherForecastView.vue` 또는 새 `WeatherPlannerView.vue` | 평일/주말 모드 UI와 도시 비교                           |
@@ -270,7 +297,7 @@ computed: 선택 도시 · 날짜 · 활동 · 시간대별 필터 · 적합도 
 ### R8. 메뉴/API 확장 - 250페이지
 
 - [x] 공통 메뉴에 `장기 예보` 항목과 `/forecast` 라우트가 있다.
-- [x] 홈·상세의 `fetchWeatherBundle`은 OpenWeather 현재·5일/3시간·대기질을 가져오고, `/forecast`는 `fetchLongRangeForecast` Open-Meteo API로 16일 데이터를 가져온다.
+- [x] 홈·상세의 `fetchWeatherBundle`은 OpenWeather 현재·5일/3시간·대기질과 (권한이 있을 때) One Call 1시간/UV를 가져오고, `/forecast`는 `fetchLongRangeForecast` Open-Meteo API로 16일 일별 데이터를 가져온다.
 - [x] 일별 응답을 최대 16일 예보 카드로 표시하고 강수 확률·최고 UV를 함께 제공한다.
 - [x] 예보 화면에 도시 선택, 로딩, 오류, 빈 데이터, 단위 변환이 있다.
 - [x] 즐겨찾기 도시로 예보를 요청해, API가 온전하게 반환한 15일 카드가 브라우저에 렌더링되는 것을 확인했다. 값이 `null`인 16일째 행은 0℃로 잘못 표시하지 않고 제외한다.
@@ -324,6 +351,7 @@ computed: 선택 도시 · 날짜 · 활동 · 시간대별 필터 · 적합도 
 - 사용자 결정에 따라 초기 실습 화면은 보존만 하고 최종 통합 화면만 시연한다. 검색·현재·상세 5일 예보는 OpenWeather로, 16일 전체 예보와 UV는 Open-Meteo로 구현하도록 확정했다.
 - 2026-08-05 원문 재대조에서 `App.vue`의 공통 메뉴·`UnitToggler` 마운트 누락과 `el-menu` 사용이라는 잘못된 기록을 바로잡았다. 홈의 확정된 지도 레이아웃은 보존하고, 상세·예보·소개에 공통 메뉴를 배치했다.
 - 같은 재대조에서 209페이지의 실제 요구가 Axios·OpenWeather 준비이며 세부 문구가 R5를 중복함을 명시했다. 장기 예보 API는 250페이지 확장 항목으로 분리했고, 값이 비어 있는 마지막 예보 행은 0℃로 표시하지 않도록 수정했다.
+- 2026-08-05 제출 요구사항·배점을 R1~R9와 함께 추적하도록 추가했다. `reactive` 사용은 Composition 실습의 날씨 목록에 명시했고, 상세의 1시간 예보·현재 UV는 OpenWeather One Call 권한이 있어야 실제 값이 채워지는 조건을 기록했다. 16일 화면은 일별 카드만 남기고 하단 시간대 프레임을 제거한다.
 - 2026-08-05 실제 홈 시나리오에서 검색 결과가 원격 응답까지 지연되고, 선택 날씨 카드가 지도 아래에 있어 보이지 않는 문제를 재현했다. 시작 도시 즉시 검색, 90초 현재 날씨 캐시, 선택 도시 요청 우선 처리, 지도 안 카드 배치로 수정한 뒤 `부산` 검색·선택·중앙 이동·실제 날씨 갱신을 다시 확인했다.
 - 2026-08-05 네온 지도 원본은 일반 직사각형 지도보다 경도가 중앙으로 압축되어 있어 도쿄 핀이 바다 쪽으로 밀렸다. 좌표 투영을 원본 대륙 윤곽에 맞춰 보정하고, 시드니는 남반구 앵커 좌표를 별도로 적용했다. 국내 즉시 검색 목록도 주요 여행·지역 도시까지 확장했다.
 
@@ -331,8 +359,8 @@ computed: 선택 도시 · 날짜 · 활동 · 시간대별 필터 · 적합도 
 
 다음 조건이 모두 충족되면 최종 제출 가능 상태다.
 
-1. R1~R9의 체크리스트가 실제 실행 증거에 따라 모두 `[x]`다.
+1. R1~R9와 제출 요구사항·채점 기준의 필수 항목이 실제 실행 증거에 따라 모두 `[x]`다.
 2. `.env.local`과 API 키는 Git 기록·소스·배포 로그에 노출되지 않는다.
 3. 유효 키, 키 누락, API 실패, 빈 검색, 알 수 없는 경로, 단위 전환, 모바일 화면을 확인했다.
 4. GitHub Pages의 실제 URL에서 Hash Router의 홈·상세·예보 화면이 동작한다.
-5. 평일/주말·즐겨찾기·실제 UV 캐릭터 같은 개선 기능까지 통합하고, OpenWeather/Open-Meteo 출처 표기·요청 제한을 지킨 뒤 다시 lint·build·배포 검증을 통과한다.
+5. 평일/주말·즐겨찾기·실제 UV 캐릭터 같은 개선 기능은 제품 확장 범위로 별도 관리한다. PDF와 제출 평가 기준의 필수 항목을 먼저 충족하고, OpenWeather/Open-Meteo 출처 표기·요청 제한을 지킨 뒤 다시 lint·build·배포 검증을 통과한다.

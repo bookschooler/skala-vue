@@ -14,7 +14,6 @@ const favoriteStore = useFavoriteStore()
 const forecastData = ref(null)
 const isLoading = ref(false)
 const errorMessage = ref('')
-const selectedDate = ref('')
 let activeController
 let requestId = 0
 
@@ -60,20 +59,6 @@ const calendarSlots = computed(() => {
   const leadingEmptyDays = new Date(`${daily[0].date}T12:00:00`).getDay()
   return [...Array.from({ length: leadingEmptyDays }, () => null), ...daily]
 })
-const selectedDaily = computed(
-  () => forecastData.value?.daily?.find((forecast) => forecast.date === selectedDate.value) ?? null,
-)
-const selectedHourly = computed(() => {
-  if (!selectedDate.value) return []
-  return (forecastData.value?.hourly ?? []).filter((hour) => {
-    if (!hour.dateTime.startsWith(selectedDate.value)) return false
-    const hourOfDay = Number(hour.dateTime.slice(11, 13))
-    return hourOfDay % 3 === 0
-  })
-})
-
-const formatHour = (dateTime) => `${dateTime.slice(11, 13)}:00`
-
 const loadForecast = async () => {
   const city = selectedCity.value
   activeController?.abort()
@@ -91,7 +76,6 @@ const loadForecast = async () => {
     const result = await fetchLongRangeForecast(city, { signal: activeController.signal })
     if (currentRequestId === requestId) {
       forecastData.value = result
-      selectedDate.value = result.daily[0]?.date ?? ''
     }
   } catch (error) {
     if (currentRequestId !== requestId || isMeteoRequestCanceled(error)) return
@@ -149,17 +133,12 @@ onBeforeUnmount(() => {
         <div class="calendar-grid">
           <template v-for="(forecast, index) in calendarSlots" :key="forecast?.date ?? `empty-${index}`">
             <div v-if="!forecast" class="calendar-empty" aria-hidden="true"></div>
-            <button
+            <article
               v-else
               class="calendar-card"
               :class="{
                 'calendar-card--today': forecast.date === forecastData.daily[0]?.date,
-                'calendar-card--selected': forecast.date === selectedDate,
               }"
-              type="button"
-              :aria-pressed="forecast.date === selectedDate"
-              :aria-label="`${formatMonthDay(forecast.date)} ${weekdayLabel(forecast.date)} 날씨 시간대별 예보 보기`"
-              @click="selectedDate = forecast.date"
             >
               <time :datetime="forecast.date">
                 <span>{{ formatMonthDay(forecast.date) }}</span>
@@ -173,32 +152,9 @@ onBeforeUnmount(() => {
                 <small><el-icon><Umbrella /></el-icon> {{ forecast.precipitationProbability }}%</small>
                 <small><el-icon><Sunny /></el-icon> UV {{ forecast.uvIndexMax }}</small>
               </div>
-            </button>
+            </article>
           </template>
         </div>
-      </div>
-    </section>
-
-    <section v-if="selectedDaily && selectedHourly.length" class="hourly-panel" :aria-label="`${formatMonthDay(selectedDaily.date)} 시간대별 예보`">
-      <header class="hourly-panel__heading">
-        <div>
-          <p>HOURLY OUTLOOK</p>
-          <h2>{{ formatMonthDay(selectedDaily.date) }} {{ weekdayLabel(selectedDaily.date) }} 시간대별 날씨</h2>
-        </div>
-        <span>3시간 간격</span>
-      </header>
-      <div class="hourly-grid">
-        <article v-for="hour in selectedHourly" :key="hour.dateTime" class="hourly-card">
-          <time :datetime="hour.dateTime">{{ formatHour(hour.dateTime) }}</time>
-          <el-icon :class="['hourly-card__weather-icon', `hourly-card__weather-icon--${weatherVisual(hour.weatherCode).tone}`]" :aria-label="hour.status">
-            <component :is="weatherVisual(hour.weatherCode).icon" />
-          </el-icon>
-          <strong>{{ displayTemp(hour.temp) }}</strong>
-          <div>
-            <small><el-icon><Umbrella /></el-icon> {{ hour.precipitationProbability }}%</small>
-            <small><el-icon><Sunny /></el-icon> UV {{ hour.uvIndex }}</small>
-          </div>
-        </article>
       </div>
     </section>
   </main>
@@ -224,10 +180,8 @@ onBeforeUnmount(() => {
 .calendar-weekdays span:last-child { color: #8abde5; }
 .calendar-grid { gap: 9px; }
 .calendar-empty { min-height: 174px; border: 1px dashed rgba(48, 89, 123, 0.24); border-radius: 10px; }
-.calendar-card { display: grid; min-height: 174px; padding: 13px; color: inherit; background: #040b17; border: 1px solid #173b59; border-radius: 10px; cursor: pointer; text-align: left; }
+.calendar-card { display: grid; min-height: 174px; padding: 13px; color: inherit; background: #040b17; border: 1px solid #173b59; border-radius: 10px; text-align: left; }
 .calendar-card--today { border-color: #8e60ff; box-shadow: 0 0 16px rgba(125, 82, 255, 0.24), inset 0 0 15px rgba(71, 96, 190, 0.06); }
-.calendar-card--selected { border-color: #67d8ff; box-shadow: 0 0 5px rgba(89, 218, 255, 0.7), 0 0 19px rgba(46, 165, 255, 0.24), inset 0 0 15px rgba(41, 118, 177, 0.1); }
-.calendar-card:hover { border-color: #86dfff; }
 .calendar-card time { display: flex; align-items: baseline; justify-content: space-between; color: #b7cfdd; font-size: 12px; }
 .calendar-card time strong { font-size: 13px; }
 .calendar-card__weather-icon { justify-self: center; align-self: center; font-size: 38px; }
@@ -243,25 +197,5 @@ onBeforeUnmount(() => {
 .calendar-card__metrics { display: grid; gap: 4px; align-self: end; }
 .calendar-card__metrics small { display: inline-flex; align-items: center; gap: 4px; color: #96b5c6; font-size: 11px; }
 .calendar-card__metrics :deep(.el-icon) { color: #8ed8f6; font-size: 13px; }
-.hourly-panel { margin-top: 18px; padding: 19px; background: #06101e; border: 1px solid #205273; border-radius: 16px; box-shadow: 0 0 30px rgba(0, 142, 230, 0.08); }
-.hourly-panel__heading { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 15px; }
-.hourly-panel__heading p { margin: 0 0 4px; color: #7fd6ff; font-size: 10px; font-weight: 800; letter-spacing: 0.13em; }
-.hourly-panel__heading h2 { margin: 0; color: #e8f8ff; font-size: 19px; }
-.hourly-panel__heading > span { color: #8eafc0; font-size: 12px; }
-.hourly-grid { display: grid; grid-template-columns: repeat(8, minmax(100px, 1fr)); gap: 9px; overflow-x: auto; }
-.hourly-card { display: grid; justify-items: center; gap: 9px; min-width: 100px; padding: 12px 9px; background: #040b17; border: 1px solid #173b59; border-radius: 10px; }
-.hourly-card time { color: #a9c2d0; font-size: 12px; font-weight: 700; }
-.hourly-card__weather-icon { font-size: 30px; }
-.hourly-card__weather-icon--sunny { color: #ffd56b; }
-.hourly-card__weather-icon--partly-cloudy { color: #9ee6ff; }
-.hourly-card__weather-icon--cloudy { color: #b8cce1; }
-.hourly-card__weather-icon--rain { color: #72ceff; }
-.hourly-card__weather-icon--snow { color: #def7ff; }
-.hourly-card__weather-icon--storm { color: #caa3ff; }
-.hourly-card__weather-icon--loading { color: #8ccce7; }
-.hourly-card > strong { color: #e4f7ff; font-size: 17px; }
-.hourly-card > div { display: grid; gap: 4px; }
-.hourly-card small { display: inline-flex; align-items: center; gap: 4px; color: #96b5c6; font-size: 11px; }
-.hourly-card :deep(.el-icon) { color: #8ed8f6; font-size: 13px; }
 @media (max-width: 560px) { .forecast-page { width: calc(100% - 24px); padding-top: 24px; } .forecast-hero { gap: 12px; } .unit-toggle { width: 40px; height: 40px; } .forecast-calendar { padding: 12px; } }
 </style>

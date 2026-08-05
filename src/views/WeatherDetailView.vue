@@ -58,8 +58,11 @@ const todayHourly = computed(() => {
   if (!today) return []
   return (weatherBundle.value?.hourly ?? [])
     .filter((hour) => hour.dateTime.startsWith(today))
-    .slice(0, 8)
+    .slice(0, 24)
 })
+const hourlyIntervalLabel = computed(() =>
+  weatherBundle.value?.hourlyIntervalHours === 1 ? '1시간 간격' : '3시간 간격',
+)
 
 const displayTemp = (temp) => {
   if (!Number.isFinite(Number(temp))) return '—'
@@ -239,18 +242,18 @@ onBeforeUnmount(() => {
             <dt>
               <el-icon><Sunny /></el-icon> 자외선 지수
             </dt>
-            <dd>{{ displayUv(currentWeather.airQuality?.uvIndex) }}</dd>
+            <dd>{{ displayUv(currentWeather.uvIndex) }}</dd>
           </div>
         </dl>
       </section>
 
-      <section v-if="todayHourly.length" class="hourly-forecast" aria-label="오늘 3시간 간격 예보">
+      <section v-if="todayHourly.length" class="hourly-forecast" :aria-label="`오늘 ${hourlyIntervalLabel} 예보`">
         <div class="section-heading">
           <div>
             <p class="section-eyebrow">HOURLY OUTLOOK</p>
             <h2>오늘 시간대별 날씨</h2>
           </div>
-          <span class="section-meta">3시간 간격</span>
+          <span class="section-meta">{{ hourlyIntervalLabel }}</span>
         </div>
         <div class="hourly-grid">
           <article v-for="hour in todayHourly" :key="hour.dateTime" class="hourly-card">

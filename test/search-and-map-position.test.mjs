@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import { defaultFavoriteCities } from '../src/data/cityCatalog.js'
-import { searchCities } from '../src/services/openWeatherService.js'
+import { normalizeOneCallHourly, searchCities } from '../src/services/openWeatherService.js'
 import { toMapPosition, toMapViewportPosition } from '../src/utils/mapPosition.js'
 
 test('해외 국가명만 입력하면 대표 도시를 최대 다섯 개 반환한다', async () => {
@@ -21,6 +21,43 @@ test('일본 국가명으로는 도쿄 외 대표 도시도 함께 반환한다'
     cities.map((city) => city.name),
     ['도쿄', '오사카', '교토', '삿포로', '후쿠오카'],
   )
+})
+
+test('OpenWeather One Call 시간별 응답은 도시 시간대의 1시간 예보와 UV로 정규화한다', () => {
+  const forecast = normalizeOneCallHourly({
+    timezone_offset: 9 * 60 * 60,
+    current: { uvi: 6.7 },
+    hourly: [
+      {
+        dt: 0,
+        temp: 21.4,
+        feels_like: 20.1,
+        pop: 0.25,
+        rain: { '1h': 0.4 },
+        wind_speed: 4,
+        clouds: 10,
+        uvi: 3.2,
+        weather: [{ id: 800, description: '맑음' }],
+      },
+    ],
+  })
+
+  assert.deepEqual(forecast, {
+    currentUvIndex: 6.7,
+    hourly: [
+      {
+        dateTime: '1970-01-01T09:00',
+        temp: 21.4,
+        feelsLike: 20.1,
+        precipitationProbability: 25,
+        precipitation: 0.4,
+        wind: 14,
+        uvIndex: 3.2,
+        weatherCode: 0,
+        status: '맑음',
+      },
+    ],
+  })
 })
 
 test('시작 도시 전체 핀은 Equal Earth 배경과 같은 전역 투영·cover 좌표를 따른다', () => {
