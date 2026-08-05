@@ -4,6 +4,7 @@ import test from 'node:test'
 import { defaultFavoriteCities } from '../src/data/cityCatalog.js'
 import { getUpcomingHourly, normalizeMeteoHourly } from '../src/services/openMeteoService.js'
 import { normalizeWeatherStatus, searchCities } from '../src/services/openWeatherService.js'
+import { migrateLegacyDefaultFavorites } from '../src/utils/favoriteMigration.js'
 import {
   getMapCardSide,
   getVisibleMapPins,
@@ -96,6 +97,32 @@ test('처음 방문한 사용자의 즐겨찾기는 대표 세계 도시 7개로
     defaultFavoriteCities.map((city) => city.name),
     ['뉴욕', '도쿄', '파리', '런던', '서울', '상하이', '홍콩'],
   )
+})
+
+test('이전 기본 즐겨찾기에 남은 방콕·시드니·로마는 새 기본 도시로 한 번 교체한다', () => {
+  const oldDefaults = [
+    { id: 'city_01', name: '서울' },
+    { id: 'meteo-1850147', name: '도쿄' },
+    { id: 'meteo-2988507', name: '파리' },
+    { id: 'meteo-5128581', name: '뉴욕' },
+    { id: 'meteo-2643743', name: '런던' },
+    { id: 'meteo-1609350', name: '방콕' },
+    { id: 'meteo-2147714', name: '시드니' },
+    { id: 'meteo-3169070', name: '로마' },
+    { id: 'quick-gyeongju', name: '경주' },
+  ]
+
+  const migrated = migrateLegacyDefaultFavorites(oldDefaults)
+
+  assert.deepEqual(
+    migrated.map((city) => city.name),
+    ['서울', '도쿄', '파리', '뉴욕', '런던', '경주', '상하이', '홍콩'],
+  )
+})
+
+test('사용자가 방콕 하나만 직접 즐겨찾기한 경우는 자동으로 지우지 않는다', () => {
+  const directFavorite = [{ id: 'meteo-1609350', name: '방콕' }]
+  assert.deepEqual(migrateLegacyDefaultFavorites(directFavorite), directFavorite)
 })
 
 test('자외선 지수는 기상청 5단계 기준의 괄호 등급으로 변환한다', () => {

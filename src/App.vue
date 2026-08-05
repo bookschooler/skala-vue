@@ -13,13 +13,6 @@ const showUtilityNavigation = computed(() => route.name !== 'WeatherHome')
   <div class="app-shell">
     <nav v-if="showUtilityNavigation" class="utility-navigation" aria-label="날씨요정 공통 메뉴">
       <RouterLink class="utility-navigation__brand" to="/">WEATHER FAIRY</RouterLink>
-
-      <div class="utility-navigation__links" aria-label="페이지 이동">
-        <RouterLink to="/">홈</RouterLink>
-        <RouterLink to="/forecast">장기 예보</RouterLink>
-        <RouterLink to="/about">소개</RouterLink>
-      </div>
-
     </nav>
 
     <RouterView />
@@ -51,7 +44,6 @@ input {
 .utility-navigation {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
   position: fixed;
   z-index: 20;
@@ -75,40 +67,10 @@ input {
   text-shadow: 0 0 14px rgba(104, 213, 255, 0.34);
 }
 
-.utility-navigation__links {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  pointer-events: auto;
-}
-
-.utility-navigation__links a {
-  padding: 8px 10px;
-  color: #9cafc8;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.utility-navigation__links a:hover,
-.utility-navigation__links a:focus-visible,
-.utility-navigation__links a.router-link-exact-active {
-  color: #ecf7ff;
-  background: rgba(102, 174, 255, 0.14);
-  outline: none;
-}
-
 @media (max-width: 720px) {
   .utility-navigation {
     min-height: 56px;
     padding: 0 12px;
   }
-
-  .utility-navigation__links {
-    gap: 0;
-  }
-
-  .utility-navigation__links a { padding: 7px 8px; font-size: 13px; }
 }
 </style>

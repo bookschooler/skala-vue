@@ -1,8 +1,10 @@
 import { ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 import { defaultFavoriteCities } from '../data/cityCatalog.js'
+import { migrateLegacyDefaultFavorites } from '../utils/favoriteMigration.js'
 
 const STORAGE_KEY = 'weather-fairy.favorite-cities.v1'
+const DEFAULTS_MIGRATION_KEY = 'weather-fairy.favorite-defaults.v2'
 const MAX_FAVORITES = 12
 
 const cloneCity = (city) => ({
@@ -26,7 +28,16 @@ const loadFavorites = () => {
     if (saved === null) return defaultFavoriteCities.map(cloneCity)
     const parsed = JSON.parse(saved)
     if (!Array.isArray(parsed)) return defaultFavoriteCities.map(cloneCity)
-    return parsed.filter(isValidCity).map(cloneCity).slice(0, MAX_FAVORITES)
+    const sanitized = parsed.filter(isValidCity).map(cloneCity).slice(0, MAX_FAVORITES)
+
+    if (localStorage.getItem(DEFAULTS_MIGRATION_KEY) === 'complete') return sanitized
+
+    const migrated = migrateLegacyDefaultFavorites(sanitized).slice(0, MAX_FAVORITES)
+    localStorage.setItem(DEFAULTS_MIGRATION_KEY, 'complete')
+    if (migrated.some((city, index) => city.id !== sanitized[index]?.id) || migrated.length !== sanitized.length) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated))
+    }
+    return migrated
   } catch {
     return defaultFavoriteCities.map(cloneCity)
   }
