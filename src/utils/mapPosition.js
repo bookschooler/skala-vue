@@ -1,6 +1,6 @@
 import countriesTopology from 'world-atlas/countries-10m.json' with { type: 'json' }
-import { geoEqualEarth, geoGraticule10, geoPath } from 'd3-geo'
-import { feature } from 'topojson-client'
+import { geoEqualEarth, geoPath } from 'd3-geo'
+import { feature, mesh } from 'topojson-client'
 
 // 국가 윤곽과 도시 핀에 반드시 같은 투영을 적용한다. Natural Earth의 위·경도
 // TopoJSON을 SVG 경로로 바꾸고, OpenWeather가 돌려주는 [경도, 위도]도 동일한
@@ -17,6 +17,13 @@ const worldProjection = geoEqualEarth().fitExtent(
 )
 const pathGenerator = geoPath(worldProjection)
 
+// 국가 면을 각각 닫아 그리면 날짜변경선을 가로지르는 섬 국가가 화면 가장자리에
+// 큰 호를 만들 수 있다. TopoJSON 경계 메쉬는 실제 국경선만 이어서 그리므로
+// 평면 네온 지도에서 지구본 외곽선이 생기지 않는다.
+export const mapCountryBorderPath = pathGenerator(
+  mesh(countriesTopology, countriesTopology.objects.countries),
+)
+
 export const mapCountries = Object.freeze(
   worldFeatureCollection.features.map((country) =>
     Object.freeze({
@@ -26,8 +33,6 @@ export const mapCountries = Object.freeze(
     }),
   ),
 )
-
-export const mapGraticulePath = pathGenerator(geoGraticule10())
 
 const isLatitude = (value) => Number.isFinite(Number(value)) && Number(value) >= -90 && Number(value) <= 90
 const isLongitude = (value) => Number.isFinite(Number(value)) && Number(value) >= -180 && Number(value) <= 180
