@@ -1,10 +1,10 @@
 # WEATHER FAIRY · Sky Archive
 
-> 여행을 떠나기 전, 도시의 날씨와 오늘의 하늘을 한 곳에서 기록하는 사이버 감성 날씨 서비스
+> 여행을 떠나기 전, 내가 가고 싶은 도시의 날씨를 알아보고, 오늘의 하늘을 다양한 사람들과 공유할 수 있는 서비스.
 
 [배포 페이지](https://bookschooler.github.io/skala-vue/#/) · [Today’s Sky](https://bookschooler.github.io/skala-vue/#/community)
 
-`WEATHER FAIRY`는 단순히 기온을 보여 주는 데서 멈추지 않습니다. 네온 라인이 흐르는 세계 지도 위에서 여행 도시를 찾고, 즐겨찾기한 장소의 날씨를 빠르게 비교하며, 각자가 본 하늘 사진과 감정을 공유하는 경험을 만들었습니다.
+`WEATHER FAIRY`는 단순히 날씨 정보를 제공하는 것에서 나아가 전세계에서 나의 두 발이 닿았던, 그리고 앞으로 닿을 곳을 추억하고 지금 이 순간을 다른 사람들과 공유할 수 있는 따뜻한 공간입니다.
 
 ## Theme & Design
 
