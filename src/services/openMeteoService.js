@@ -107,7 +107,14 @@ const normalizeDaily = (daily = {}) => {
 
 const fetchMeteoForecast = async (
   city,
-  { signal, forecastDays, errorMessage, includeHourly = true, client = forecastClient } = {},
+  {
+    signal,
+    forecastDays,
+    errorMessage,
+    includeHourly = true,
+    client = forecastClient,
+    endpoint = '/forecast',
+  } = {},
 ) => {
   assertCoordinates(city)
   const params = {
@@ -124,7 +131,7 @@ const fetchMeteoForecast = async (
     params.hourly =
       'temperature_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,wind_speed_10m,uv_index'
   }
-  const { data } = await client.get('/forecast', {
+  const { data } = await client.get(endpoint, {
     params,
     signal,
   })
@@ -161,6 +168,7 @@ export const fetchLongRangeForecast = async (city, { signal } = {}) => {
     forecast = await fetchMeteoForecast(city, {
       ...requestOptions,
       client: ensembleForecastClient,
+      endpoint: '/ensemble',
     })
   }
   longRangeForecastCache.set(cacheKey, { forecast, savedAt: Date.now() })
