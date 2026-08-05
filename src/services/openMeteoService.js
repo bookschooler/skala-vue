@@ -8,6 +8,13 @@ const forecastClient = axios.create({
   timeout: 10000,
 })
 
+// 기본 예보 API의 공개 일일 한도에 도달했을 때만 16일 일별 예보를 이어 받는다.
+// 같은 Open-Meteo의 앙상블 예보 API이므로 WMO 코드와 온도 단위는 그대로 호환된다.
+const ensembleForecastClient = axios.create({
+  baseURL: 'https://ensemble-api.open-meteo.com/v1',
+  timeout: 10000,
+})
+
 const LONG_RANGE_CACHE_TTL = 30 * 60 * 1000
 const longRangeForecastCache = new Map()
 
@@ -100,7 +107,7 @@ const normalizeDaily = (daily = {}) => {
 
 const fetchMeteoForecast = async (
   city,
-  { signal, forecastDays, errorMessage, includeHourly = true } = {},
+  { signal, forecastDays, errorMessage, includeHourly = true, client = forecastClient } = {},
 ) => {
   assertCoordinates(city)
   const params = {
@@ -117,7 +124,7 @@ const fetchMeteoForecast = async (
     params.hourly =
       'temperature_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,wind_speed_10m,uv_index'
   }
-  const { data } = await forecastClient.get('/forecast', {
+  const { data } = await client.get('/forecast', {
     params,
     signal,
   })
@@ -138,12 +145,24 @@ export const fetchLongRangeForecast = async (city, { signal } = {}) => {
   const cached = longRangeForecastCache.get(cacheKey)
   if (cached && Date.now() - cached.savedAt < LONG_RANGE_CACHE_TTL) return cached.forecast
 
-  const forecast = await fetchMeteoForecast(city, {
+  const requestOptions = {
     signal,
     forecastDays: 16,
     includeHourly: false,
     errorMessage: 'Open-Meteo 장기 예보 응답 형식이 올바르지 않습니다.',
-  })
+  }
+
+  let forecast
+  try {
+    forecast = await fetchMeteoForecast(city, requestOptions)
+  } catch (error) {
+    // 일반 예보 API의 쿼터 오류만 대체한다. 좌표·네트워크 등의 다른 오류는 숨기지 않는다.
+    if (error?.response?.status !== 429) throw error
+    forecast = await fetchMeteoForecast(city, {
+      ...requestOptions,
+      client: ensembleForecastClient,
+    })
+  }
   longRangeForecastCache.set(cacheKey, { forecast, savedAt: Date.now() })
   return forecast
 }
