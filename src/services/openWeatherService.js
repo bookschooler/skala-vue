@@ -171,14 +171,18 @@ const toWeatherVisualCode = (weatherId, cloudiness = 0) => {
   if (id >= 700 && id < 800) return 45
   if (id === 800) return 0
   if (id === 801 || Number(cloudiness) < 50) return 2
+  if (id === 802 || id === 803) return 4
   return 3
 }
 
 export const normalizeWeatherStatus = (weather) => {
   const weatherId = Number(weather?.id)
-  // OpenWeather의 한국어 '온흐림'은 화면 용어를 기상청식으로 통일한다.
+  // API 번역문 대신 아이콘 코드와 같은 단계의 고정 문구를 써서, 같은 아이콘에
+  // 서로 다른 구름 표현이 섞여 보이지 않게 한다.
+  if (weatherId === 800) return '맑음'
+  if (weatherId === 801) return '구름 조금'
+  if (weatherId === 802 || weatherId === 803) return '흐림'
   if (weatherId === 804) return '완전흐림'
-  if (weatherId === 803) return '흐림'
 
   const status = weather?.description?.trim() || weather?.main?.trim() || ''
   if (status === '온흐림') return '완전흐림'

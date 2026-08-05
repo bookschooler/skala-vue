@@ -6,6 +6,7 @@ import { getUpcomingHourly, normalizeMeteoHourly } from '../src/services/openMet
 import { normalizeMetNorwayHourly } from '../src/services/metNorwayService.js'
 import { normalizeWeatherStatus, searchCities } from '../src/services/openWeatherService.js'
 import { migrateLegacyDefaultFavorites } from '../src/utils/favoriteMigration.js'
+import { getWeatherVisual } from '../src/utils/weatherVisual.js'
 import {
   getMapCardSide,
   getVisibleMapPins,
@@ -121,9 +122,13 @@ test('시간대별 예보는 현재 도시 시각부터 다음 24개만 반환�
   assert.equal(upcoming.at(-1).dateTime, '2026-08-06T14:00')
 })
 
-test('OpenWeather의 온흐림 표현은 기상청식 완전흐림으로 바꾼다', () => {
+test('OpenWeather 구름 상태는 아이콘 단계와 일대일로 같은 용어를 쓴다', () => {
+  assert.equal(normalizeWeatherStatus({ id: 801, description: '약간의 구름이 낀 하늘' }), '구름 조금')
+  assert.equal(normalizeWeatherStatus({ id: 802, description: '튼구름' }), '흐림')
   assert.equal(normalizeWeatherStatus({ id: 804, description: '온흐림' }), '완전흐림')
   assert.equal(normalizeWeatherStatus({ id: 803, description: '튼구름' }), '흐림')
+  assert.notEqual(getWeatherVisual(2).icon, getWeatherVisual(4).icon)
+  assert.notEqual(getWeatherVisual(4).icon, getWeatherVisual(3).icon)
 })
 
 test('처음 방문한 사용자의 즐겨찾기는 대표 세계 도시 7개로 시작한다', () => {

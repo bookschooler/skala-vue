@@ -12,7 +12,9 @@ const showUtilityNavigation = computed(() => route.name !== 'WeatherHome')
 <template>
   <div class="app-shell">
     <nav v-if="showUtilityNavigation" class="utility-navigation" aria-label="날씨요정 공통 메뉴">
-      <RouterLink class="utility-navigation__brand" to="/">WEATHER FAIRY</RouterLink>
+      <RouterLink class="utility-navigation__brand" to="/">
+        <span>WEATHER</span><strong>FAIRY</strong>
+      </RouterLink>
     </nav>
 
     <RouterView />
@@ -57,14 +59,29 @@ input {
 }
 
 .utility-navigation__brand {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
   color: #eaf4ff;
-  font-size: 13px;
-  font-weight: 900;
+  font-family: 'Arial Narrow', 'Helvetica Neue', sans-serif;
   letter-spacing: 0.16em;
   text-decoration: none;
   white-space: nowrap;
   pointer-events: auto;
   text-shadow: 0 0 14px rgba(104, 213, 255, 0.34);
+}
+
+.utility-navigation__brand span {
+  color: #d2e2eb;
+  font-size: clamp(18px, 1.55vw, 25px);
+  font-weight: 400;
+}
+
+.utility-navigation__brand strong {
+  color: #f0f8ff;
+  font-size: clamp(30px, 2.55vw, 40px);
+  font-weight: 700;
+  letter-spacing: 0.08em;
 }
 
 @media (max-width: 720px) {

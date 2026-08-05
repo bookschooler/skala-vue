@@ -577,13 +577,13 @@ onBeforeUnmount(() => {
 
 .brand span {
   color: #d2e2eb;
-  font-size: clamp(14px, 1.2vw, 20px);
+  font-size: clamp(18px, 1.55vw, 25px);
   font-weight: 400;
 }
 
 .brand strong {
   color: #f0f8ff;
-  font-size: clamp(23px, 2vw, 31px);
+  font-size: clamp(30px, 2.55vw, 40px);
   font-weight: 700;
   letter-spacing: 0.08em;
 }

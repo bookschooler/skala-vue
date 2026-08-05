@@ -107,7 +107,10 @@ const loadForecast = async () => {
     }
   } catch (error) {
     if (currentRequestId !== requestId || isMeteoRequestCanceled(error)) return
-    errorMessage.value = '예보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'
+    errorMessage.value =
+      error?.response?.status === 429
+        ? '16일 예보 제공처의 요청 제한에 도달했습니다. 잠시 후 다시 시도해 주세요.'
+        : '예보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'
   } finally {
     if (currentRequestId === requestId) isLoading.value = false
   }

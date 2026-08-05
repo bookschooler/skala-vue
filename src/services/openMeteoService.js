@@ -7,6 +7,9 @@ const forecastClient = axios.create({
   timeout: 10000,
 })
 
+const LONG_RANGE_CACHE_TTL = 30 * 60 * 1000
+const longRangeForecastCache = new Map()
+
 const weatherCodeText = Object.freeze({
   0: '맑음',
   1: '대체로 맑음',
@@ -121,12 +124,19 @@ const fetchMeteoForecast = async (city, { signal, forecastDays, errorMessage } =
   }
 }
 
-export const fetchLongRangeForecast = (city, { signal } = {}) =>
-  fetchMeteoForecast(city, {
+export const fetchLongRangeForecast = async (city, { signal } = {}) => {
+  const cacheKey = `${Number(city?.lat).toFixed(3)},${Number(city?.lon).toFixed(3)}`
+  const cached = longRangeForecastCache.get(cacheKey)
+  if (cached && Date.now() - cached.savedAt < LONG_RANGE_CACHE_TTL) return cached.forecast
+
+  const forecast = await fetchMeteoForecast(city, {
     signal,
     forecastDays: 16,
     errorMessage: 'Open-Meteo 장기 예보 응답 형식이 올바르지 않습니다.',
   })
+  longRangeForecastCache.set(cacheKey, { forecast, savedAt: Date.now() })
+  return forecast
+}
 
 export const fetchDetailHourlyForecast = (city, { signal } = {}) =>
   fetchMeteoForecast(city, {

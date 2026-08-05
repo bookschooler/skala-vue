@@ -4,14 +4,16 @@ import {
   Lightning,
   Loading,
   MostlyCloudy,
+  PartlyCloudy,
   Pouring,
   Sunny,
 } from '@element-plus/icons-vue'
 
 const weatherVisuals = Object.freeze({
   clear: { icon: Sunny, tone: 'sunny', label: '맑음' },
-  partlyCloudy: { icon: MostlyCloudy, tone: 'partly-cloudy', label: '구름 조금' },
-  cloudy: { icon: Cloudy, tone: 'cloudy', label: '흐림 또는 안개' },
+  partlyCloudy: { icon: PartlyCloudy, tone: 'partly-cloudy', label: '구름 조금' },
+  mostlyCloudy: { icon: MostlyCloudy, tone: 'cloudy', label: '흐림' },
+  cloudy: { icon: Cloudy, tone: 'cloudy', label: '완전흐림 또는 안개' },
   drizzle: { icon: Drizzling, tone: 'rain', label: '이슬비' },
   rain: { icon: Pouring, tone: 'rain', label: '비' },
   snow: { icon: Cloudy, tone: 'snow', label: '눈' },
@@ -25,6 +27,7 @@ export const getWeatherVisual = (weatherCode) => {
   if (!Number.isFinite(code)) return weatherVisuals.loading
   if (code === 0 || code === 1) return weatherVisuals.clear
   if (code === 2) return weatherVisuals.partlyCloudy
+  if (code === 4) return weatherVisuals.mostlyCloudy
   if (code === 3 || code === 45 || code === 48) return weatherVisuals.cloudy
   if (code >= 51 && code <= 57) return weatherVisuals.drizzle
   if ((code >= 61 && code <= 67) || (code >= 80 && code <= 82)) return weatherVisuals.rain
