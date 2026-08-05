@@ -536,11 +536,8 @@ onMounted(() => {
 
             <div class="detail-scroll-area">
               <section class="detail-caption">
-                <div class="detail-caption__identity">
-                  <img class="profile-avatar profile-avatar--small" :src="getProfileImage(selectedPost.author)" alt="" />
-                  <p><b>{{ selectedPost.author }}</b> {{ selectedPost.content }}</p>
-                </div>
                 <h2>{{ selectedPost.title }}</h2>
+                <p class="detail-caption__content">{{ selectedPost.content }}</p>
                 <p v-if="selectedPost.capturedAt" class="detail-captured-at">촬영 · {{ formatCapturedAt(selectedPost.capturedAt) }}</p>
                 <div class="detail-tags"><span>{{ selectedPost.weather }}</span><span class="sky-color-tag"><i v-for="color in getPostSkyColors(selectedPost)" :key="color" :style="{ backgroundColor: color }"></i>{{ getPostSkyColorLabel(selectedPost) }}</span><span>구름 {{ selectedPost.cloudAmount }}</span><span>{{ getCloudLabel(selectedPost.cloudType) }}</span></div>
                 <div v-if="selectedPost.tags?.length" class="detail-hashtags" aria-label="게시글 해시태그"><button v-for="tag in selectedPost.tags" :key="tag" type="button" @click="filterByTag(tag)">{{ tag }}</button></div>
@@ -717,9 +714,7 @@ onMounted(() => {
 .text-compose:hover, .text-compose:focus-visible { color: #e9faff; outline: none; text-decoration: underline; }
 .sky-feed { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-flow: row dense; gap: 14px; }
 .sky-card { overflow: hidden; background: #07111f; border: 1px solid #193a53; border-radius: 12px; box-shadow: 0 10px 28px rgba(0, 0, 0, .16); }
-.sky-card--1 { grid-row: span 2; }
 .sky-card__media { position: relative; display: block; width: 100%; min-height: 275px; padding: 0; overflow: hidden; color: #effaff; background: #07111f; border: 0; cursor: pointer; text-align: left; }
-.sky-card--1 .sky-card__media { min-height: 474px; }
 .sky-card--2 .sky-card__media { min-height: 316px; }
 .sky-card__media img { display: block; width: 100%; height: 100%; min-height: inherit; object-fit: cover; transition: transform .35s ease; }
 .sky-card__media:hover img, .sky-card__media:focus-visible img { transform: scale(1.035); }
@@ -751,7 +746,8 @@ onMounted(() => {
 .feed-state button { width: fit-content; justify-self: center; padding: 9px 11px; color: #a3e1fb; background: #0c2d46; border: 1px solid #28739a; border-radius: 7px; cursor: pointer; font: inherit; font-size: 12px; font-weight: 800; }
 .feed-state--error { color: #ffbdc6; }
 .post-backdrop, .composer-backdrop { position: fixed; z-index: 20; inset: 0; display: grid; padding: 20px; background: rgba(0, 5, 15, .78); backdrop-filter: blur(8px); overflow-y: auto; place-items: center; }
-.post-detail { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(360px, .92fr); width: min(1080px, 100%); height: min(760px, calc(100vh - 40px)); overflow: hidden; background: #091727; border: 1px solid #4389b0; border-radius: 16px; box-shadow: 0 28px 75px rgba(0, 0, 0, .6); }
+.post-backdrop { top: 76px; padding: 12px 20px 20px; }
+.post-detail { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(360px, .92fr); width: min(1080px, 100%); height: min(760px, calc(100vh - 108px)); overflow: hidden; background: #091727; border: 1px solid #4389b0; border-radius: 16px; box-shadow: 0 28px 75px rgba(0, 0, 0, .6); }
 .post-detail__photo { min-width: 0; height: 100%; margin: 0; background: #020910; }
 .post-detail__photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .post-detail__side { display: flex; min-width: 0; min-height: 0; flex-direction: column; background: #091727; }
@@ -766,10 +762,8 @@ onMounted(() => {
 .detail-close { margin-left: auto; }
 .detail-scroll-area { min-height: 0; flex: 1; overflow-y: auto; }
 .detail-caption { padding: 18px 18px 14px; border-bottom: 1px solid #20455e; }
-.detail-caption__identity { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 9px; align-items: start; }
-.detail-caption__identity p { margin: 1px 0 0; color: #c0d7e2; font-size: 12px; line-height: 1.58; }
-.detail-caption__identity b { color: #f0fbff; }
-.post-detail h2 { margin: 13px 0 5px; color: #eefaff; font-size: clamp(18px, 2vw, 23px); line-height: 1.3; letter-spacing: -.03em; }
+.post-detail h2 { margin: 0 0 8px; color: #eefaff; font-size: clamp(18px, 2vw, 23px); line-height: 1.3; letter-spacing: -.03em; }
+.detail-caption__content { margin: 0 0 10px; color: #c0d7e2; font-size: 12px; line-height: 1.58; overflow-wrap: anywhere; }
 .detail-captured-at { margin: 0; color: #75bce1 !important; font-size: 10px; font-weight: 800; }
 .detail-tags { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 13px; }
 .detail-hashtags { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 9px; }
@@ -796,8 +790,8 @@ onMounted(() => {
 .comment-form { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; padding-top: 10px; border-top: 1px solid #18394f; }
 .comment-form textarea { width: 100%; min-width: 0; min-height: 31px; padding: 6px 0; color: #e4f6ff; background: transparent; border: 0; outline: none; font: inherit; font-size: 12px; line-height: 1.45; resize: none; }
 .comment-form textarea::placeholder { color: #789aac; }
-.comment-form button { padding: 4px 0 4px 6px; color: #62cef6; background: transparent; border: 0; cursor: pointer; font: inherit; font-size: 12px; font-weight: 900; }
-.comment-form button:hover:not(:disabled) { color: #d9f8ff; }
+.comment-form button { min-height: 34px; padding: 0 11px; color: #dff8ff; background: linear-gradient(135deg, #127fb6, #5d54d4); border: 1px solid #65d8ff; border-radius: 8px; box-shadow: 0 0 14px rgba(53, 186, 255, .18); cursor: pointer; font: inherit; font-size: 12px; font-weight: 900; }
+.comment-form button:hover:not(:disabled) { color: #fff; filter: brightness(1.14); }
 .comment-form button:disabled { opacity: .42; cursor: default; }
 .comment-form > p { grid-column: 1 / -1; margin: 0; color: #ffb1bd !important; font-size: 11px; }
 .composer { display: grid; gap: 16px; width: min(720px, 100%); padding: 27px; color: #dbf4ff; background: #081727; border: 1px solid #2d82ae; border-radius: 18px; box-shadow: 0 26px 70px rgba(0, 0, 0, .52), 0 0 30px rgba(20, 168, 243, .13); }

@@ -834,7 +834,8 @@ onBeforeUnmount(() => {
 .map-stage {
   position: absolute;
   z-index: 0;
-  inset: 0;
+  /* 공통 네비게이션과 홈 배너 영역은 단색으로 남기고, 그 아래에서만 지도를 시작한다. */
+  inset: 80px 0 0;
   --favorite-map-height: 100%;
 }
 

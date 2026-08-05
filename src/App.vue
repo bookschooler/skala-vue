@@ -7,11 +7,19 @@ const route = useRoute()
 // 홈의 지도 레이아웃은 그대로 두되, 네비게이션은 고정 오버레이로 올려
 // 세로 공간을 추가로 차지하지 않게 한다.
 const isWeatherHome = computed(() => route.name === 'WeatherHome')
+const isCommunityPage = computed(() => route.name === 'TravelCommunity')
 </script>
 
 <template>
   <div class="app-shell">
-    <nav class="utility-navigation" :class="{ 'utility-navigation--home': isWeatherHome }" aria-label="날씨요정 공통 메뉴">
+    <nav
+      class="utility-navigation"
+      :class="{
+        'utility-navigation--home': isWeatherHome,
+        'utility-navigation--community': isCommunityPage,
+      }"
+      aria-label="날씨요정 공통 메뉴"
+    >
       <RouterLink v-if="!isWeatherHome" class="utility-navigation__brand" to="/" aria-label="WEATHER FAIRY 홈">
         <span>WEATHER</span><strong>FAIRY</strong>
       </RouterLink>
@@ -139,6 +147,12 @@ input {
   margin-right: clamp(118px, 12vw, 178px);
 }
 
+/* Today’s Sky 피드의 좌·우 기준선(최대 1320px)에 계정 메뉴를 맞춘다. */
+.utility-navigation--community {
+  padding-right: max(20px, calc((100vw - 1320px) / 2));
+  padding-left: max(20px, calc((100vw - 1320px) / 2));
+}
+
 .utility-navigation__brand span {
   color: #d2e2eb;
   font-size: clamp(18px, 1.55vw, 25px);
@@ -166,6 +180,11 @@ input {
 
   .utility-navigation--home .utility-navigation__auth {
     margin-right: 96px;
+  }
+
+  .utility-navigation--community {
+    padding-right: 14px;
+    padding-left: 14px;
   }
 
   .utility-navigation__links a {
