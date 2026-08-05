@@ -22,3 +22,14 @@ export const getPm10Level = (value) => {
   if (concentration <= 150) return '나쁨'
   return '매우나쁨'
 }
+
+// 환경부가 안내하는 적정 실내 습도 40~60%를 중심으로 생활 체감 문구를 표시한다.
+export const getHumidityComfortLevel = (value) => {
+  if (!isValidIndex(value)) return null
+
+  const humidity = Number(value)
+  if (humidity < 40) return '건조'
+  if (humidity <= 60) return '쾌적'
+  if (humidity <= 70) return '다소 습함'
+  return '불쾌'
+}

@@ -28,7 +28,8 @@ const favoriteStore = useFavoriteStore()
 
 // 처음 홈에 들어왔을 때는 검색 또는 즐겨찾기 선택 전까지 큰 날씨 카드를 보이지 않는다.
 const selectedCity = ref(null)
-const showFavoritePins = ref(true)
+const hoveredCity = ref(null)
+const showFavoritePins = ref(false)
 const searchScope = ref('domestic')
 const searchQuery = ref('')
 const searchResults = ref([])
@@ -63,8 +64,6 @@ const starterCityLandmarkById = new Map([
   ['meteo-3169070', romeLandmarkUrl],
 ])
 const favorites = computed(() => favoriteStore.cities)
-const selectedWeather = computed(() => weatherByCityId.value[selectedCity.value?.id] ?? null)
-const isSelectedFavorite = computed(() => favoriteStore.isFavorite(selectedCity.value?.id))
 const favoriteWeatherCities = computed(() =>
   favorites.value.map((city) => {
     const weather = weatherByCityId.value[city.id]
@@ -76,22 +75,24 @@ const favoriteWeatherCities = computed(() =>
     }
   }),
 )
+const withCurrentWeather = (city) => {
+  if (!city) return null
+  const weather = weatherByCityId.value[city.id]
+  return {
+    ...city,
+    temp: weather?.temp ?? null,
+    condition: weather?.status ?? '날씨 불러오는 중',
+    weatherCode: weather?.weatherCode ?? null,
+  }
+}
 const favoriteCardLayoutStyle = computed(() => {
   const cardCount = Math.max(favoriteWeatherCities.value.length, 1)
   return {
     gridTemplateColumns: `repeat(${cardCount}, minmax(100px, 136px))`,
   }
 })
-const mapSelectedCity = computed(() => {
-  if (!selectedCity.value) return null
-  const weather = selectedWeather.value
-  return {
-    ...selectedCity.value,
-    temp: weather?.temp ?? null,
-    condition: weather?.status ?? '날씨 불러오는 중',
-    weatherCode: weather?.weatherCode ?? null,
-  }
-})
+const mapSelectedCity = computed(() => withCurrentWeather(selectedCity.value))
+const mapCardCity = computed(() => withCurrentWeather(hoveredCity.value ?? selectedCity.value))
 const searchHint = computed(() =>
   searchScope.value === 'domestic' ? '국내 도시를 검색하세요' : '해외 도시 또는 국가를 검색하세요',
 )
@@ -169,12 +170,22 @@ const refreshFavoriteWeather = async ({ excludeCityId = null } = {}) => {
 
 const selectCity = (city) => {
   if (!city) return
+  hoveredCity.value = null
   selectedCity.value = city
   isMapFocused.value = true
   searchMessage.value = `${city.name} 위치와 현재 날씨를 확인하고 있어요.`
   searchResults.value = []
   searchState.value = 'idle'
   loadSelectedWeather(city)
+}
+
+const previewCity = (city) => {
+  if (!showFavoritePins.value || !city) return
+  hoveredCity.value = city
+}
+
+const clearPreviewCity = (city) => {
+  if (hoveredCity.value?.id === city?.id) hoveredCity.value = null
 }
 
 const performSearch = async ({
@@ -228,22 +239,22 @@ const selectSearchResult = (city) => {
   selectCity(city)
 }
 
-const toggleSelectedFavorite = () => {
-  const result = favoriteStore.toggleFavorite(selectedCity.value)
+const toggleCityFavorite = (city) => {
+  if (!city) return
+  const result = favoriteStore.toggleFavorite(city)
   if (!result.ok && result.reason === 'limit') {
     searchMessage.value = `즐겨찾기는 최대 ${favoriteStore.maxFavorites}개까지 저장할 수 있어요.`
     return
   }
   searchMessage.value =
     result.reason === 'added'
-      ? `${selectedCity.value.name}을(를) 즐겨찾기에 저장했어요.`
-      : `${selectedCity.value.name}을(를) 즐겨찾기에서 제거했어요.`
+      ? `${city.name}을(를) 즐겨찾기에 저장했어요.`
+      : `${city.name}을(를) 즐겨찾기에서 제거했어요.`
   if (result.reason === 'added') refreshFavoriteWeather()
 }
 
-const openDetail = () => {
-  if (!selectedCity.value) return
-  const city = selectedCity.value
+const openDetail = (city = selectedCity.value) => {
+  if (!city) return
   router.push({
     name: 'WeatherDetail',
     params: { cityId: city.id },
@@ -307,6 +318,10 @@ watch(
     refreshFavoriteWeather({ excludeCityId: selectedCity.value?.id })
   },
 )
+
+watch(showFavoritePins, (isVisible) => {
+  if (!isVisible) hoveredCity.value = null
+})
 
 onMounted(() => {
   // 홈 초기 화면은 하단 즐겨찾기 미니 카드만 표시하고, 날씨는 배경에서 채운다.
@@ -405,46 +420,52 @@ onBeforeUnmount(() => {
 
     <section class="map-stage" aria-label="도시 지도 미리보기">
       <FavoriteMap
-        :favorites="favoriteWeatherCities"
-        :selected-city="mapSelectedCity"
-        :show-favorite-pins="showFavoritePins"
-        :is-focused="isMapFocused"
-        @select-city="selectCity"
-      >
-        <template #selected-card="{ position }">
+          :favorites="favoriteWeatherCities"
+          :selected-city="mapSelectedCity"
+          :card-city="mapCardCity"
+          :show-favorite-pins="showFavoritePins"
+          :is-focused="isMapFocused"
+          @select-city="selectCity"
+          @preview-city="previewCity"
+          @clear-preview="clearPreviewCity"
+        >
+        <template #selected-card="{ city, position, cardSide }">
           <section
-            v-if="selectedCity"
+            v-if="city"
             class="weather-summary"
+            :class="{ 'weather-summary--left': cardSide === 'left' }"
             :style="{ '--selected-city-left': position.left, '--selected-city-top': position.top }"
-            aria-label="선택한 도시의 현재 날씨"
+            :aria-label="`${city.name}의 현재 날씨`"
           >
             <header class="weather-summary__header">
               <div class="weather-summary__title">
                 <p>LIVE WEATHER</p>
-                <h1>{{ selectedCity.name }}</h1>
-                <span>{{ selectedCity.country }}</span>
+                <h1>{{ city.name }}</h1>
+                <span>{{ city.country }}</span>
               </div>
               <button
                 class="summary-favorite"
                 type="button"
-                :aria-label="isSelectedFavorite ? '즐겨찾기에서 제거' : '즐겨찾기에 추가'"
-                @click="toggleSelectedFavorite"
+                :aria-label="favoriteStore.isFavorite(city.id) ? '즐겨찾기에서 제거' : '즐겨찾기에 추가'"
+                @click="toggleCityFavorite(city)"
               >
-                <el-icon><component :is="isSelectedFavorite ? StarFilled : Star" /></el-icon>
+                <el-icon
+                  ><component :is="favoriteStore.isFavorite(city.id) ? StarFilled : Star" />
+                </el-icon>
               </button>
             </header>
             <div class="weather-summary__condition">
               <el-icon
                 :class="[
                   'weather-icon',
-                  `weather-icon--${weatherVisual(selectedWeather?.weatherCode).tone}`,
+                  `weather-icon--${weatherVisual(city.weatherCode).tone}`,
                 ]"
               >
-                <component :is="weatherVisual(selectedWeather?.weatherCode).icon" />
+                <component :is="weatherVisual(city.weatherCode).icon" />
               </el-icon>
               <div>
-                <strong>{{ displayTemperature(selectedWeather?.temp) }}</strong>
-                <small>{{ selectedWeather?.status ?? '현재 날씨를 불러오는 중' }}</small>
+                <strong>{{ displayTemperature(city.temp) }}</strong>
+                <small>{{ city.condition }}</small>
               </div>
             </div>
             <p v-if="weatherError" class="weather-summary__error" role="alert">
@@ -453,7 +474,7 @@ onBeforeUnmount(() => {
             <button
               class="summary-action summary-action--primary"
               type="button"
-              @click="openDetail"
+              @click="openDetail(city)"
             >
               상세 보기 <el-icon><ArrowRight /></el-icon>
             </button>
@@ -944,6 +965,11 @@ onBeforeUnmount(() => {
     0 0 20px rgba(145, 81, 255, 0.36),
     inset 0 0 20px rgba(87, 72, 200, 0.08);
   backdrop-filter: blur(7px);
+}
+
+.weather-summary--left {
+  /* 지도 오른쪽의 도시(예: 캔버라)는 카드가 핀 왼쪽에 붙어 서로 겹치지 않는다. */
+  left: clamp(10px, calc(var(--selected-city-left) - 222px), calc(100% - 206px));
 }
 
 .weather-summary__header {

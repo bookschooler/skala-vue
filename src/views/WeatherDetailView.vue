@@ -21,7 +21,11 @@ import {
 import { fetchWeatherBundle, isWeatherRequestCanceled } from '../services/openWeatherService.js'
 import { useConfigStore } from '../stores/configStore.js'
 import { useFavoriteStore } from '../stores/favoriteStore.js'
-import { getPm10Level, getUvIndexLevel } from '../utils/weatherIndexLevel.js'
+import {
+  getHumidityComfortLevel,
+  getPm10Level,
+  getUvIndexLevel,
+} from '../utils/weatherIndexLevel.js'
 import { getWeatherVisual } from '../utils/weatherVisual.js'
 
 const route = useRoute()
@@ -129,6 +133,11 @@ const displayUvWithLevel = (value) => {
 const displayParticulateWithLevel = (value) => {
   const level = getPm10Level(value)
   return level ? `${displayParticulate(value)} (${level})` : displayParticulate(value)
+}
+
+const displayHumidityWithLevel = (value) => {
+  const level = getHumidityComfortLevel(value)
+  return level ? `${value}% (${level})` : '—'
 }
 
 const forecastRoute = computed(() => {
@@ -272,8 +281,9 @@ onBeforeUnmount(() => {
           <div>
             <dt>
               <el-icon><Cloudy /></el-icon> 습도
+              <small class="metric-agency">환경부 적정 40~60%</small>
             </dt>
-            <dd>{{ currentWeather.humidity }}%</dd>
+            <dd>{{ displayHumidityWithLevel(currentWeather.humidity) }}</dd>
           </div>
           <div>
             <dt>
@@ -346,7 +356,7 @@ onBeforeUnmount(() => {
       <section class="daily-forecast" aria-label="5일 예보">
         <div class="section-heading">
           <h2>5일 예보</h2>
-          <RouterLink :to="forecastRoute">16일 전체 예보 보기</RouterLink>
+          <RouterLink class="full-forecast-link" :to="forecastRoute">16일 전체 예보 보기</RouterLink>
         </div>
         <div class="daily-grid">
           <article v-for="forecast in detailDailyForecast.slice(0, 5)" :key="forecast.date">
@@ -576,6 +586,38 @@ dd {
 .section-heading a {
   color: #89d8ff;
   font-size: 13px;
+}
+.full-forecast-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 13px;
+  color: #c6efff;
+  background: linear-gradient(135deg, rgba(14, 74, 118, 0.62), rgba(28, 39, 96, 0.62));
+  border: 1px solid #4ebeff;
+  border-radius: 9px;
+  box-shadow:
+    0 0 0 1px rgba(70, 180, 255, 0.12) inset,
+    0 0 14px rgba(42, 177, 255, 0.38),
+    0 0 28px rgba(80, 91, 255, 0.16);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+.full-forecast-link:hover,
+.full-forecast-link:focus-visible {
+  color: #f0fbff;
+  border-color: #a4ecff;
+  box-shadow:
+    0 0 0 1px rgba(157, 232, 255, 0.32) inset,
+    0 0 19px rgba(60, 199, 255, 0.68),
+    0 0 34px rgba(93, 94, 255, 0.32);
+  outline: 0;
+  transform: translateY(-1px);
 }
 .section-eyebrow {
   margin: 0 0 4px;

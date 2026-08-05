@@ -18,11 +18,15 @@ const props = defineProps({
     type: Object,
     default: null,
   },
+  cardCity: {
+    type: Object,
+    default: null,
+  },
   showFavoritePins: Boolean,
   isFocused: Boolean,
 })
 
-const emit = defineEmits(['select-city'])
+const emit = defineEmits(['select-city', 'preview-city', 'clear-preview'])
 const configStore = useConfigStore()
 const mapWorld = ref(null)
 const mapViewport = ref({ width: 0, height: 0 })
@@ -47,6 +51,7 @@ onBeforeUnmount(() => {
 
 const isSameCity = (first, second) => first?.id && first.id === second?.id
 const mapPositionFor = (city) => toMapViewportPosition(toMapPosition(city), mapViewport.value)
+const cardSideFor = (city) => (Number.parseFloat(mapPositionFor(city).left) > 68 ? 'left' : 'right')
 
 const visiblePins = computed(() => {
   // 지도 위 핀은 '즐겨찾기 핀 보기'가 켜진 즐겨찾기 도시에만 한정한다.
@@ -126,19 +131,27 @@ const pinLabel = (city) => `${city.name} ${city.condition} ${displayPinTemperatu
           v-for="city in visiblePins"
           :key="city.id"
           class="map-pin"
-          :class="{ 'map-pin--selected': isSameCity(city, selectedCity) }"
+          :class="{
+            'map-pin--selected': isSameCity(city, selectedCity),
+            'map-pin--preview': isSameCity(city, cardCity),
+          }"
           :style="mapPositionFor(city)"
           type="button"
           :aria-label="pinLabel(city)"
+          @mouseenter="emit('preview-city', city)"
+          @mouseleave="emit('clear-preview', city)"
+          @focus="emit('preview-city', city)"
+          @blur="emit('clear-preview', city)"
           @click="emit('select-city', city)"
         >
           <el-icon><LocationFilled /></el-icon>
         </button>
         <slot
-          v-if="selectedCity"
+          v-if="cardCity"
           name="selected-card"
-          :city="selectedCity"
-          :position="mapPositionFor(selectedCity)"
+          :city="cardCity"
+          :position="mapPositionFor(cardCity)"
+          :card-side="cardSideFor(cardCity)"
         />
       </div>
     </div>
@@ -220,6 +233,11 @@ const pinLabel = (city) => `${city.name} ${city.condition} ${displayPinTemperatu
   z-index: 5;
   color: #66d9ff;
   filter: drop-shadow(0 0 10px rgba(64, 213, 255, 0.98));
+}
+
+.map-pin--preview {
+  /* 호버 미리보기 카드가 나타나도 해당 핀은 항상 카드 위에서 보인다. */
+  z-index: 5;
 }
 
 .map-pin:hover,

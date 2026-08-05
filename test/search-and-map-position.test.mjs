@@ -5,7 +5,11 @@ import { defaultFavoriteCities } from '../src/data/cityCatalog.js'
 import { getUpcomingHourly, normalizeMeteoHourly } from '../src/services/openMeteoService.js'
 import { normalizeWeatherStatus, searchCities } from '../src/services/openWeatherService.js'
 import { mapCountries, toMapPosition, toMapViewportPosition } from '../src/utils/mapPosition.js'
-import { getPm10Level, getUvIndexLevel } from '../src/utils/weatherIndexLevel.js'
+import {
+  getHumidityComfortLevel,
+  getPm10Level,
+  getUvIndexLevel,
+} from '../src/utils/weatherIndexLevel.js'
 
 test('해외 국가명만 입력하면 대표 도시를 최대 다섯 개 반환한다', async () => {
   const cities = await searchCities('미국', { scope: 'global' })
@@ -81,6 +85,13 @@ test('OpenWeather의 온흐림 표현은 기상청식 완전흐림으로 바꾼�
   assert.equal(normalizeWeatherStatus({ id: 803, description: '튼구름' }), '흐림')
 })
 
+test('처음 방문한 사용자의 즐겨찾기는 대표 세계 도시 7개로 시작한다', () => {
+  assert.deepEqual(
+    defaultFavoriteCities.map((city) => city.name),
+    ['뉴욕', '도쿄', '파리', '런던', '서울', '상하이', '홍콩'],
+  )
+})
+
 test('자외선 지수는 기상청 5단계 기준의 괄호 등급으로 변환한다', () => {
   assert.equal(getUvIndexLevel(2.8), '낮음')
   assert.equal(getUvIndexLevel(3), '보통')
@@ -98,6 +109,14 @@ test('PM10은 환경부·에어코리아 예보 등급으로 변환한다', () =
   assert.equal(getPm10Level(undefined), null)
 })
 
+test('습도는 환경부 적정 실내 습도 40~60%를 중심으로 생활 문구를 표시한다', () => {
+  assert.equal(getHumidityComfortLevel(39), '건조')
+  assert.equal(getHumidityComfortLevel(51), '쾌적')
+  assert.equal(getHumidityComfortLevel(65), '다소 습함')
+  assert.equal(getHumidityComfortLevel(71), '불쾌')
+  assert.equal(getHumidityComfortLevel(null), null)
+})
+
 test('시작 도시 전체 핀은 실제 SVG 세계지도와 같은 전역 투영·cover 좌표를 따른다', () => {
   const positions = Object.fromEntries(
     defaultFavoriteCities.map((city) => [
@@ -107,14 +126,13 @@ test('시작 도시 전체 핀은 실제 SVG 세계지도와 같은 전역 투�
   )
 
   assert.deepEqual(positions, {
-    서울: { left: '80.71%', top: '22.15%' },
+    뉴욕: { left: '32.44%', top: '20.04%' },
     도쿄: { left: '84.15%', top: '23.44%' },
     파리: { left: '50.53%', top: '14.86%' },
-    뉴욕: { left: '32.44%', top: '20.04%' },
     런던: { left: '49.97%', top: '13.26%' },
-    방콕: { left: '76.65%', top: '39.45%' },
-    시드니: { left: '87.32%', top: '75.30%' },
-    로마: { left: '52.94%', top: '19.26%' },
+    서울: { left: '80.71%', top: '22.15%' },
+    상하이: { left: '80.38%', top: '26.56%' },
+    홍콩: { left: '79.59%', top: '33.02%' },
   })
 })
 
@@ -182,10 +200,10 @@ test('대한민국 윤곽은 SVG에 존재하고, 서울·경주는 한 투영 �
   assert.deepEqual(gyeongju, { left: '81.56%', top: '25.90%' })
 })
 
-test('서울과 시드니도 화면 비율이 달라져도 SVG와 동일한 cover 좌표계를 사용한다', () => {
+test('서울과 상하이도 화면 비율이 달라져도 SVG와 동일한 cover 좌표계를 사용한다', () => {
   const viewport = { width: 1280, height: 800 }
   const positions = Object.fromEntries(
-    ['서울', '시드니'].map((name) => {
+    ['서울', '상하이'].map((name) => {
       const city = defaultFavoriteCities.find((item) => item.name === name)
       return [name, toMapViewportPosition(toMapPosition(city), viewport)]
     }),
@@ -193,6 +211,6 @@ test('서울과 시드니도 화면 비율이 달라져도 SVG와 동일한 cove
 
   assert.deepEqual(positions, {
     서울: { left: '86.91%', top: '24.84%' },
-    시드니: { left: '94.86%', top: '72.86%' },
+    상하이: { left: '86.51%', top: '28.82%' },
   })
 })
