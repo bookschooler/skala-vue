@@ -84,6 +84,7 @@ const likedPostIds = ref([])
 const savedPostIds = ref([])
 const isComposerOpen = ref(false)
 const activeCloudHelp = ref('')
+const cloudHelpPosition = ref({ top: 16, left: 16 })
 const formError = ref('')
 const photoInput = ref(null)
 const commentInput = ref(null)
@@ -126,6 +127,11 @@ const visiblePosts = computed(() =>
 const activeFilterCount = computed(() => Object.values(filterState).filter(Boolean).length)
 
 const draftTags = computed(() => parseHashtags(draft.value.hashtagText))
+const activeCloudHelpItem = computed(() => getCloudType(activeCloudHelp.value))
+const cloudHelpStyle = computed(() => ({
+  top: `${cloudHelpPosition.value.top}px`,
+  left: `${cloudHelpPosition.value.left}px`,
+}))
 
 const filterSummary = computed(() => {
   const labels = [
@@ -169,8 +175,23 @@ function getCloudPreviewUrl(imageUrl) {
   return assetUrl(imageUrl.replace(/\.png$/, '-thumb.png'))
 }
 
-function showCloudHelp(id) {
+function showCloudHelp(id, event) {
   activeCloudHelp.value = id
+  const anchor = event?.currentTarget
+  if (!anchor || typeof window === 'undefined') return
+
+  const rect = anchor.getBoundingClientRect()
+  const tooltipWidth = 260
+  const tooltipHeight = 310
+  const viewportPadding = 14
+  const placeOnRight = rect.right + 12 + tooltipWidth <= window.innerWidth - viewportPadding
+
+  cloudHelpPosition.value = {
+    top: Math.max(viewportPadding, Math.min(rect.top - 10, window.innerHeight - tooltipHeight - viewportPadding)),
+    left: placeOnRight
+      ? rect.right + 12
+      : Math.max(viewportPadding, rect.left - tooltipWidth - 12),
+  }
 }
 
 function hideCloudHelp(id) {
@@ -480,19 +501,13 @@ onMounted(() => {
           <section v-for="group in cloudGroups" :key="group.id" class="cloud-group">
             <p><b>{{ group.label }}</b><span>{{ group.altitude }}</span></p>
             <div>
-              <div v-for="cloud in group.types" :key="cloud.id" class="cloud-type-option" @mouseenter="showCloudHelp(cloud.id)" @mouseleave="hideCloudHelp(cloud.id)">
+              <div v-for="cloud in group.types" :key="cloud.id" class="cloud-type-option">
                 <button type="button" :class="{ selected: filterState.cloudType === cloud.id }" @click="selectFilter('cloudType', cloud.id)">
                   {{ cloud.label }} <small>({{ cloud.alias }}) · {{ cloud.code }}</small>
                 </button>
-                <button class="cloud-info-button" type="button" :aria-label="`${cloud.label} 설명 보기`" @focus="showCloudHelp(cloud.id)" @blur="hideCloudHelp(cloud.id)" @click.stop="showCloudHelp(cloud.id)">
+                <button class="cloud-info-button" type="button" :aria-label="`${cloud.label} 설명 보기`" aria-describedby="cloud-help-tooltip" @mouseenter="showCloudHelp(cloud.id, $event)" @mouseleave="hideCloudHelp(cloud.id)" @focus="showCloudHelp(cloud.id, $event)" @blur="hideCloudHelp(cloud.id)" @keydown.esc="hideCloudHelp(cloud.id)" @click.stop="showCloudHelp(cloud.id, $event)">
                   <el-icon><InfoFilled /></el-icon>
                 </button>
-                <aside v-if="activeCloudHelp === cloud.id" class="cloud-tooltip" role="tooltip">
-                  <img :src="getCloudPreviewUrl(cloud.imageUrl)" :alt="`${cloud.label} 대표 모습`" />
-                  <strong>{{ cloud.label }} <small>({{ cloud.alias }}) · {{ cloud.code }}</small></strong>
-                  <span>{{ group.label }} · {{ group.altitude }}</span>
-                  <p>{{ cloud.description }}</p>
-                </aside>
               </div>
             </div>
           </section>
@@ -658,14 +673,9 @@ onMounted(() => {
             <section v-for="group in cloudGroups" :key="group.id">
               <p><b>{{ group.label }}</b><span>{{ group.altitude }}</span></p>
               <div>
-                <div v-for="cloud in group.types" :key="cloud.id" class="taxonomy-choice" @mouseenter="showCloudHelp(cloud.id)" @mouseleave="hideCloudHelp(cloud.id)">
+                <div v-for="cloud in group.types" :key="cloud.id" class="taxonomy-choice">
                   <label :class="{ active: draft.cloudType === cloud.id }"><input v-model="draft.cloudType" type="radio" :value="cloud.id" /><b>{{ cloud.label }}</b><small>({{ cloud.alias }}) · {{ cloud.code }}</small></label>
-                  <button class="cloud-info-button" type="button" :aria-label="`${cloud.label} 설명 보기`" @focus="showCloudHelp(cloud.id)" @blur="hideCloudHelp(cloud.id)" @click.stop="showCloudHelp(cloud.id)"><el-icon><InfoFilled /></el-icon></button>
-                  <aside v-if="activeCloudHelp === cloud.id" class="cloud-tooltip cloud-tooltip--composer" role="tooltip">
-                    <img :src="getCloudPreviewUrl(cloud.imageUrl)" :alt="`${cloud.label} 대표 모습`" />
-                    <strong>{{ cloud.label }} <small>({{ cloud.alias }}) · {{ cloud.code }}</small></strong>
-                    <p>{{ cloud.description }}</p>
-                  </aside>
+                  <button class="cloud-info-button" type="button" :aria-label="`${cloud.label} 설명 보기`" aria-describedby="cloud-help-tooltip" @mouseenter="showCloudHelp(cloud.id, $event)" @mouseleave="hideCloudHelp(cloud.id)" @focus="showCloudHelp(cloud.id, $event)" @blur="hideCloudHelp(cloud.id)" @keydown.esc="hideCloudHelp(cloud.id)" @click.stop="showCloudHelp(cloud.id, $event)"><el-icon><InfoFilled /></el-icon></button>
                 </div>
               </div>
             </section>
@@ -682,6 +692,21 @@ onMounted(() => {
         </form>
       </section>
     </Transition>
+
+    <Teleport to="body">
+      <aside
+        id="cloud-help-tooltip"
+        v-show="activeCloudHelpItem"
+        class="cloud-tooltip cloud-tooltip--floating"
+        :style="cloudHelpStyle"
+        role="tooltip"
+      >
+        <img v-if="activeCloudHelpItem" :src="getCloudPreviewUrl(activeCloudHelpItem.imageUrl)" :alt="`${activeCloudHelpItem.label} 대표 모습`" />
+        <strong v-if="activeCloudHelpItem">{{ activeCloudHelpItem.label }} <small>({{ activeCloudHelpItem.alias }}) · {{ activeCloudHelpItem.code }}</small></strong>
+        <span v-if="activeCloudHelpItem">{{ activeCloudHelpItem.group.label }} · {{ activeCloudHelpItem.group.altitude }}</span>
+        <p v-if="activeCloudHelpItem">{{ activeCloudHelpItem.description }}</p>
+      </aside>
+    </Teleport>
   </main>
 </template>
 
@@ -720,6 +745,7 @@ onMounted(() => {
 .cloud-tooltip strong small { color: #80c7ec; }
 .cloud-tooltip > span { padding-top: 3px; color: #779aaf; font-size: 10px; }
 .cloud-tooltip p { margin: 7px 0 12px; color: #b1c9d7; font-size: 11px; line-height: 1.5; }
+.cloud-tooltip--floating { right: auto; bottom: auto; width: min(260px, calc(100vw - 28px)); max-height: min(310px, calc(100vh - 28px)); pointer-events: none; transform: none; }
 .reset-filter { display: inline-flex; align-items: center; gap: 4px; min-height: 35px; padding: 0 7px; color: #86a9be; background: transparent; border: 0; cursor: pointer; font: inherit; font-size: 12px; font-weight: 800; }
 .reset-filter:hover { color: #dff5ff; }
 .feed-heading { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 18px 2px 12px; }
@@ -867,7 +893,6 @@ onMounted(() => {
 .taxonomy-choice label { display: flex; align-items: baseline; flex: 1; gap: 5px; padding: 6px 7px; color: #acccdc; border: 1px solid transparent; border-radius: 6px; cursor: pointer; font-size: 12px; }
 .taxonomy-choice label small { color: #749bae; font-size: 10px; }
 .taxonomy-choice label.active { color: #effcff; background: #0d3551; border-color: #3ca9dd; }
-.cloud-tooltip--composer { position: absolute; z-index: 12; top: calc(100% + 7px); right: auto; bottom: auto; left: 0; width: min(245px, calc(100vw - 72px)); max-height: none; transform: none; }
 .form-error { margin: -4px 0 0; color: #ffadb8; font-size: 12px; }
 .composer footer { color: #7290a2; font-size: 11px; }
 .composer footer > div { display: flex; gap: 8px; }
@@ -879,5 +904,5 @@ onMounted(() => {
 .detail-fade-enter-from, .detail-fade-leave-to, .composer-fade-enter-from, .composer-fade-leave-to { opacity: 0; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
 @media (max-width: 860px) { .sky-page { width: calc(100% - 28px); padding-top: 27px; } .sky-feed { grid-template-columns: repeat(2, minmax(0, 1fr)); } .sky-card--1 { grid-row: auto; } .sky-card--1 .sky-card__media { min-height: 380px; } .filter-menu--taxonomy { left: auto; right: 0; } }
-@media (max-width: 640px) { .sky-hero { align-items: flex-start; } .sky-hero h1 { font-size: 34px; } .filter-control { min-width: calc(50% - 6px); } .filter-control--cloud { min-width: 100%; } .filter-menu--taxonomy { width: min(520px, calc(100vw - 38px)); max-height: min(500px, calc(100vh - 150px)); grid-template-columns: 1fr; } .sky-feed { grid-template-columns: 1fr; } .sky-card--1 .sky-card__media, .sky-card--2 .sky-card__media, .sky-card__media { min-height: 340px; } .post-detail { grid-template-columns: 1fr; height: auto; max-height: none; } .post-detail__photo { height: min(54vh, 400px); } .post-detail__side { min-height: 470px; } .detail-scroll-area { max-height: 360px; } .composer-backdrop, .post-backdrop { align-items: start; padding: 10px; } .composer-backdrop { top: 54px; } .composer { padding: 21px 16px; } .composer-grid, .taxonomy-fieldset, .captured-at-field, .captured-at-inputs, .sky-color-field { grid-template-columns: 1fr; } .captured-at-field { gap: 12px; padding: 14px; } .selected-color { grid-column: auto; margin-top: -5px; } .composer footer { align-items: flex-start; flex-direction: column; } .cloud-tooltip { top: auto; right: 18px; bottom: 18px; left: 18px; width: auto; max-height: calc(100vh - 36px); transform: none; } .cloud-tooltip--composer { top: calc(100% + 7px); right: auto; bottom: auto; left: 0; width: min(245px, calc(100vw - 54px)); max-height: none; } }
+@media (max-width: 640px) { .sky-hero { align-items: flex-start; } .sky-hero h1 { font-size: 34px; } .filter-control { min-width: calc(50% - 6px); } .filter-control--cloud { min-width: 100%; } .filter-menu--taxonomy { width: min(520px, calc(100vw - 38px)); max-height: min(500px, calc(100vh - 150px)); grid-template-columns: 1fr; } .sky-feed { grid-template-columns: 1fr; } .sky-card--1 .sky-card__media, .sky-card--2 .sky-card__media, .sky-card__media { min-height: 340px; } .post-detail { grid-template-columns: 1fr; height: auto; max-height: none; } .post-detail__photo { height: min(54vh, 400px); } .post-detail__side { min-height: 470px; } .detail-scroll-area { max-height: 360px; } .composer-backdrop, .post-backdrop { align-items: start; padding: 10px; } .composer-backdrop { top: 54px; } .composer { padding: 21px 16px; } .composer-grid, .taxonomy-fieldset, .captured-at-field, .captured-at-inputs, .sky-color-field { grid-template-columns: 1fr; } .captured-at-field { gap: 12px; padding: 14px; } .selected-color { grid-column: auto; margin-top: -5px; } .composer footer { align-items: flex-start; flex-direction: column; } .cloud-tooltip--floating { width: min(260px, calc(100vw - 28px)); } }
 </style>
