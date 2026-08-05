@@ -24,6 +24,20 @@ test('일본 국가명으로는 도쿄 외 대표 도시도 함께 반환한다'
   )
 })
 
+test('생소한 국가명도 대표 도시 목록으로 바로 검색된다', async () => {
+  const brazilCities = await searchCities('브라질', { scope: 'global' })
+  const madagascarCities = await searchCities('마다가스카르', { scope: 'global' })
+
+  assert.deepEqual(
+    brazilCities.map((city) => city.name),
+    ['브라질리아', '상파울루', '리우데자네이루'],
+  )
+  assert.deepEqual(
+    madagascarCities.map((city) => city.name),
+    ['안타나나리보', '토아마시나', '안치라베'],
+  )
+})
+
 test('Open-Meteo 시간별 응답은 1시간 예보와 UV를 정규화한다', () => {
   const forecast = normalizeMeteoHourly({
     time: ['2026-08-05T09:00'],

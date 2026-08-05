@@ -91,7 +91,16 @@ export const searchKnownCities = (query, { scope = 'global' } = {}) => {
       .includes(normalizedQuery)
   })
 
-  return sortCitiesByRelevance(matchedCities, normalizedQuery)
+  // 국가명을 정확히 입력한 경우에는 국가 중심점 같은 임시 검색 항목보다
+  // 그 나라의 실제 대표 도시만 우선 노출한다.
+  const exactCountryCities = matchedCities.filter(
+    (city) => normalizeSearchText(city.country) === normalizedQuery,
+  )
+
+  return sortCitiesByRelevance(
+    exactCountryCities.length ? exactCountryCities : matchedCities,
+    normalizedQuery,
+  )
 }
 
 const countryName = (countryCode) => {

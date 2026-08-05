@@ -853,7 +853,8 @@ onBeforeUnmount(() => {
   position: absolute;
   z-index: 4;
   top: clamp(10px, calc(var(--selected-city-top) - 48px), calc(100% - 164px));
-  left: clamp(10px, calc(var(--selected-city-left) + 22px), calc(100% - 206px));
+  /* 중앙 핀의 아이콘 폭과 겹치지 않도록 카드 시작점을 오른쪽으로 띄운다. */
+  left: clamp(10px, calc(var(--selected-city-left) + 42px), calc(100% - 206px));
   width: clamp(164px, 13vw, 196px);
   padding: 10px;
   margin: 0;
@@ -1089,7 +1090,7 @@ button:focus-visible,
     top: clamp(8px, calc(var(--selected-city-top) - 46px), calc(100% - 156px));
     right: auto;
     bottom: auto;
-    left: clamp(8px, calc(var(--selected-city-left) + 20px), calc(100% - 188px));
+    left: clamp(8px, calc(var(--selected-city-left) + 38px), calc(100% - 188px));
     width: min(180px, 52vw);
     padding: 10px;
   }
