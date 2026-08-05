@@ -761,12 +761,12 @@ onMounted(() => {
 .detail-close, .composer header > button, .photo-field > button { display: grid; width: 31px; height: 31px; padding: 0; color: #d0e7f2; background: rgba(2, 12, 23, .78); border: 1px solid #4b89ac; border-radius: 50%; cursor: pointer; font: inherit; font-size: 20px; place-items: center; }
 .detail-close { margin-left: auto; }
 .detail-scroll-area { min-height: 0; flex: 1; overflow-y: auto; }
-.detail-caption { padding: 18px 18px 14px; border-bottom: 1px solid #20455e; }
-.post-detail h2 { margin: 0 0 8px; color: #eefaff; font-size: clamp(18px, 2vw, 23px); line-height: 1.3; letter-spacing: -.03em; }
-.detail-caption__content { margin: 0 0 10px; color: #c0d7e2; font-size: 12px; line-height: 1.58; overflow-wrap: anywhere; }
-.detail-captured-at { margin: 0; color: #75bce1 !important; font-size: 10px; font-weight: 800; }
-.detail-tags { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 13px; }
-.detail-hashtags { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 9px; }
+.detail-caption { padding: 24px 18px 21px; border-bottom: 1px solid #20455e; }
+.post-detail h2 { margin: 0 0 14px; color: #eefaff; font-size: clamp(18px, 2vw, 23px); line-height: 1.3; letter-spacing: -.03em; }
+.detail-caption__content { margin: 0; color: #c0d7e2; font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+.detail-captured-at { margin: 15px 0 0; color: #75bce1 !important; font-size: 10px; font-weight: 800; }
+.detail-tags { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 0; margin-top: 19px; }
+.detail-hashtags { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 0; margin-top: 10px; }
 .comment-panel { padding: 17px 18px 19px; }
 .comment-panel h3 { display: flex; align-items: baseline; gap: 6px; margin: 0 0 13px; color: #e5f7ff; font-size: 13px; }
 .comment-panel h3 span { color: #6ec5ec; font-size: 11px; }
