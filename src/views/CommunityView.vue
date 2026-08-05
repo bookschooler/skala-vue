@@ -2,8 +2,10 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ChatDotRound, CollectionTag, InfoFilled, Location, Picture, Plus, RefreshRight } from '@element-plus/icons-vue'
 import { useCommunityPostStore } from '../stores/communityPostStore.js'
+import { useAuthStore } from '../stores/authStore.js'
 
 const communityPostStore = useCommunityPostStore()
+const authStore = useAuthStore()
 const assetUrl = (path) => {
   if (!path || /^(data:|https?:)/.test(path)) return path
   return `${import.meta.env.BASE_URL}${path.replace(/^\/+/, '')}`
@@ -266,7 +268,7 @@ async function submitComment() {
 
   try {
     const comment = await communityPostStore.createComment(selectedPost.value.id, {
-      author: '하늘지기',
+      author: authStore.displayName,
       content,
     })
     selectedPost.value = {
@@ -283,6 +285,7 @@ async function submitComment() {
 function openComposer() {
   formError.value = ''
   communityPostStore.clearError()
+  draft.value.author = authStore.user ? authStore.displayName : ''
   isComposerOpen.value = true
 }
 
@@ -597,8 +600,8 @@ onMounted(() => {
             <label>장소<input v-model.trim="draft.destination" type="text" placeholder="예: 서울 마포구" maxlength="40" /></label>
             <label>작성자<input v-model.trim="draft.author" type="text" placeholder="비워 두면 익명 하늘지기" maxlength="30" /></label>
           </div>
-          <label>한 줄 제목<input v-model.trim="draft.title" type="text" placeholder="이 하늘을 한마디로 남겨보세요" maxlength="100" /></label>
-          <label>기록<textarea v-model.trim="draft.content" rows="3" placeholder="오늘 하늘에서 발견한 순간을 적어보세요." maxlength="600"></textarea></label>
+          <label>한 줄 제목<input v-model.trim="draft.title" type="text" placeholder="오늘 하늘 사진에 멋진 제목을 지어주세요" maxlength="100" /></label>
+          <label>기록<textarea v-model.trim="draft.content" rows="3" placeholder="오늘 하늘 사진에 대한 생각과 감정을 기록해보아요" maxlength="600"></textarea></label>
           <label class="hashtag-field">해시태그 <small>선택 · 띄어쓰기나 쉼표로 최대 5개까지 적어 주세요.</small><input v-model="draft.hashtagText" type="text" placeholder="#아침하늘 #구름산책" maxlength="80" /></label>
           <div v-if="draftTags.length" class="hashtag-preview" aria-label="입력한 해시태그 미리보기"><span v-for="tag in draftTags" :key="tag">{{ tag }}</span></div>
           <section class="captured-at-field" aria-labelledby="captured-at-label">
@@ -619,7 +622,7 @@ onMounted(() => {
             <label v-for="option in weatherOptions" :key="option" :class="{ active: draft.weather === option }"><input v-model="draft.weather" type="radio" :value="option" />{{ option }}</label>
           </fieldset>
           <section class="sky-color-field" aria-labelledby="sky-color-label">
-            <div><b id="sky-color-label">하늘색</b><small>사진 속 색을 최대 3가지까지 골라 하늘의 그라데이션을 남겨요.</small></div>
+            <div><b id="sky-color-label">하늘색</b><small>오늘의 하늘색을 색상 팔레트에서 선택해보세요(복수 선택 가능)</small></div>
             <div class="sky-color-options">
               <button v-for="option in skyColorOptions" :key="option.value" type="button" :class="{ active: draft.skyColors.includes(option.value) }" :aria-label="option.label" :title="option.label" :style="{ backgroundColor: option.value }" @click="toggleDraftSkyColor(option.value)"></button>
               <label class="custom-color-picker" title="직접 하늘색 추가"><input value="#5EBAE8" type="color" aria-label="직접 하늘색 추가" @input="addCustomSkyColor($event.target.value)" /><span>+</span></label>
@@ -747,6 +750,7 @@ onMounted(() => {
 .feed-state--error { color: #ffbdc6; }
 .post-backdrop, .composer-backdrop { position: fixed; z-index: 20; inset: 0; display: grid; padding: 20px; background: rgba(0, 5, 15, .78); backdrop-filter: blur(8px); overflow-y: auto; place-items: center; }
 .post-backdrop { top: 76px; padding: 12px 20px 20px; }
+.composer-backdrop { top: 76px; padding: 12px 20px 20px; }
 .post-detail { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(360px, .92fr); width: min(1080px, 100%); height: min(760px, calc(100vh - 108px)); overflow: hidden; background: #091727; border: 1px solid #4389b0; border-radius: 16px; box-shadow: 0 28px 75px rgba(0, 0, 0, .6); }
 .post-detail__photo { min-width: 0; height: 100%; margin: 0; background: #020910; }
 .post-detail__photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
@@ -844,7 +848,7 @@ onMounted(() => {
 .taxonomy-choice label { display: flex; align-items: baseline; flex: 1; gap: 5px; padding: 6px 7px; color: #acccdc; border: 1px solid transparent; border-radius: 6px; cursor: pointer; font-size: 12px; }
 .taxonomy-choice label small { color: #749bae; font-size: 10px; }
 .taxonomy-choice label.active { color: #effcff; background: #0d3551; border-color: #3ca9dd; }
-.cloud-tooltip--composer { right: max(24px, calc((100vw - 760px) / 2)); }
+.cloud-tooltip--composer { position: absolute; z-index: 12; top: calc(100% + 7px); right: auto; bottom: auto; left: 0; width: min(245px, calc(100vw - 72px)); max-height: none; transform: none; }
 .form-error { margin: -4px 0 0; color: #ffadb8; font-size: 12px; }
 .composer footer { color: #7290a2; font-size: 11px; }
 .composer footer > div { display: flex; gap: 8px; }
@@ -856,5 +860,5 @@ onMounted(() => {
 .detail-fade-enter-from, .detail-fade-leave-to, .composer-fade-enter-from, .composer-fade-leave-to { opacity: 0; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
 @media (max-width: 860px) { .sky-page { width: calc(100% - 28px); padding-top: 27px; } .sky-feed { grid-template-columns: repeat(2, minmax(0, 1fr)); } .sky-card--1 { grid-row: auto; } .sky-card--1 .sky-card__media { min-height: 380px; } .filter-menu--taxonomy { left: auto; right: 0; } }
-@media (max-width: 640px) { .sky-hero { align-items: flex-start; } .sky-hero h1 { font-size: 34px; } .filter-control { min-width: calc(50% - 6px); } .filter-control--cloud { min-width: 100%; } .filter-menu--taxonomy { width: min(520px, calc(100vw - 38px)); max-height: min(500px, calc(100vh - 150px)); grid-template-columns: 1fr; } .sky-feed { grid-template-columns: 1fr; } .sky-card--1 .sky-card__media, .sky-card--2 .sky-card__media, .sky-card__media { min-height: 340px; } .post-detail { grid-template-columns: 1fr; height: auto; max-height: none; } .post-detail__photo { height: min(54vh, 400px); } .post-detail__side { min-height: 470px; } .detail-scroll-area { max-height: 360px; } .composer-backdrop, .post-backdrop { align-items: start; padding: 10px; } .composer { padding: 21px 16px; } .composer-grid, .taxonomy-fieldset, .captured-at-field, .captured-at-inputs, .sky-color-field { grid-template-columns: 1fr; } .captured-at-field { gap: 12px; padding: 14px; } .selected-color { grid-column: auto; margin-top: -5px; } .composer footer { align-items: flex-start; flex-direction: column; } .cloud-tooltip { top: auto; right: 18px; bottom: 18px; left: 18px; width: auto; max-height: calc(100vh - 36px); transform: none; } .cloud-tooltip--composer { right: 18px; } }
+@media (max-width: 640px) { .sky-hero { align-items: flex-start; } .sky-hero h1 { font-size: 34px; } .filter-control { min-width: calc(50% - 6px); } .filter-control--cloud { min-width: 100%; } .filter-menu--taxonomy { width: min(520px, calc(100vw - 38px)); max-height: min(500px, calc(100vh - 150px)); grid-template-columns: 1fr; } .sky-feed { grid-template-columns: 1fr; } .sky-card--1 .sky-card__media, .sky-card--2 .sky-card__media, .sky-card__media { min-height: 340px; } .post-detail { grid-template-columns: 1fr; height: auto; max-height: none; } .post-detail__photo { height: min(54vh, 400px); } .post-detail__side { min-height: 470px; } .detail-scroll-area { max-height: 360px; } .composer-backdrop, .post-backdrop { align-items: start; padding: 10px; } .composer-backdrop { top: 54px; } .composer { padding: 21px 16px; } .composer-grid, .taxonomy-fieldset, .captured-at-field, .captured-at-inputs, .sky-color-field { grid-template-columns: 1fr; } .captured-at-field { gap: 12px; padding: 14px; } .selected-color { grid-column: auto; margin-top: -5px; } .composer footer { align-items: flex-start; flex-direction: column; } .cloud-tooltip { top: auto; right: 18px; bottom: 18px; left: 18px; width: auto; max-height: calc(100vh - 36px); transform: none; } .cloud-tooltip--composer { top: calc(100% + 7px); right: auto; bottom: auto; left: 0; width: min(245px, calc(100vw - 54px)); max-height: none; } }
 </style>

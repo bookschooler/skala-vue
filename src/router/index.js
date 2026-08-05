@@ -32,9 +32,7 @@ const router = createRouter({
     },
     {
       path: '/join',
-      name: 'Join',
-      component: () => import('../views/AuthView.vue'),
-      props: { mode: 'join' },
+      redirect: '/login',
     },
     {
       path: '/weather/:cityId',

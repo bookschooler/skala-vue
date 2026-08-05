@@ -1,13 +1,25 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
+import { useAuthStore } from './stores/authStore.js'
 
 const route = useRoute()
+const authStore = useAuthStore()
 
 // 홈의 지도 레이아웃은 그대로 두되, 네비게이션은 고정 오버레이로 올려
 // 세로 공간을 추가로 차지하지 않게 한다.
 const isWeatherHome = computed(() => route.name === 'WeatherHome')
 const isCommunityPage = computed(() => route.name === 'TravelCommunity')
+
+onMounted(() => authStore.initialize())
+
+async function signOut() {
+  try {
+    await authStore.signOut()
+  } catch {
+    // 전역 메뉴에서는 로그인 페이지가 오류 안내를 담당한다.
+  }
+}
 </script>
 
 <template>
@@ -28,9 +40,11 @@ const isCommunityPage = computed(() => route.name === 'TravelCommunity')
         <RouterLink to="/community">Today’s Sky</RouterLink>
       </div>
       <div class="utility-navigation__auth" aria-label="계정 메뉴">
-        <RouterLink to="/login">LOG IN</RouterLink>
-        <span aria-hidden="true">|</span>
-        <RouterLink to="/join">JOIN</RouterLink>
+        <template v-if="authStore.user">
+          <span class="utility-navigation__user">{{ authStore.displayName }}</span>
+          <button type="button" @click="signOut">LOG OUT</button>
+        </template>
+        <RouterLink v-else to="/login">LOG IN</RouterLink>
       </div>
     </nav>
 
@@ -135,11 +149,29 @@ input {
   text-decoration: none;
 }
 
-.utility-navigation__auth a:last-child,
+.utility-navigation__auth button,
 .utility-navigation__auth a:hover,
-.utility-navigation__auth a:focus-visible {
+.utility-navigation__auth a:focus-visible,
+.utility-navigation__auth button:hover,
+.utility-navigation__auth button:focus-visible {
   color: #b9e8ff;
   outline: none;
+}
+
+.utility-navigation__auth button {
+  padding: 0;
+  color: #9ab7c9;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+.utility-navigation__user {
+  overflow: hidden;
+  max-width: 112px;
+  color: #d6edf8;
+  text-overflow: ellipsis;
 }
 
 /* 홈의 우측 온도·즐겨찾기 도구와 겹치지 않도록 로그인 영역만 앞쪽으로 옮긴다. */
