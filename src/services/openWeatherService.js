@@ -174,8 +174,18 @@ const toWeatherVisualCode = (weatherId, cloudiness = 0) => {
   return 3
 }
 
-const weatherStatus = (weather) =>
-  weather?.description?.trim() || weather?.main?.trim() || '날씨 정보 없음'
+export const normalizeWeatherStatus = (weather) => {
+  const weatherId = Number(weather?.id)
+  // OpenWeather의 한국어 '온흐림'은 화면 용어를 기상청식으로 통일한다.
+  if (weatherId === 804) return '완전흐림'
+  if (weatherId === 803) return '흐림'
+
+  const status = weather?.description?.trim() || weather?.main?.trim() || ''
+  if (status === '온흐림') return '완전흐림'
+  return status || '날씨 정보 없음'
+}
+
+const weatherStatus = (weather) => normalizeWeatherStatus(weather)
 
 const formatCityDateTime = (timestamp, timezoneOffset = 0) => {
   if (!isFiniteNumber(timestamp)) return null

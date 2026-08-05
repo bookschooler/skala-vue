@@ -2,9 +2,10 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import { defaultFavoriteCities } from '../src/data/cityCatalog.js'
-import { normalizeMeteoHourly } from '../src/services/openMeteoService.js'
-import { searchCities } from '../src/services/openWeatherService.js'
+import { getUpcomingHourly, normalizeMeteoHourly } from '../src/services/openMeteoService.js'
+import { normalizeWeatherStatus, searchCities } from '../src/services/openWeatherService.js'
 import { mapCountries, toMapPosition, toMapViewportPosition } from '../src/utils/mapPosition.js'
+import { getPm10Level, getUvIndexLevel } from '../src/utils/weatherIndexLevel.js'
 
 test('해외 국가명만 입력하면 대표 도시를 최대 다섯 개 반환한다', async () => {
   const cities = await searchCities('미국', { scope: 'global' })
@@ -61,6 +62,40 @@ test('Open-Meteo 시간별 응답은 1시간 예보와 UV를 정규화한다', (
     weatherCode: 0,
     status: '맑음',
   }])
+})
+
+test('시간대별 예보는 현재 도시 시각부터 다음 24개만 반환한다', () => {
+  const hourly = Array.from({ length: 39 }, (_, index) => ({
+    dateTime: `2026-08-${index < 24 ? '05' : '06'}T${String(index % 24).padStart(2, '0')}:00`,
+  }))
+
+  const upcoming = getUpcomingHourly(hourly, '2026-08-05T15:00', 24)
+
+  assert.equal(upcoming.length, 24)
+  assert.equal(upcoming[0].dateTime, '2026-08-05T15:00')
+  assert.equal(upcoming.at(-1).dateTime, '2026-08-06T14:00')
+})
+
+test('OpenWeather의 온흐림 표현은 기상청식 완전흐림으로 바꾼다', () => {
+  assert.equal(normalizeWeatherStatus({ id: 804, description: '온흐림' }), '완전흐림')
+  assert.equal(normalizeWeatherStatus({ id: 803, description: '튼구름' }), '흐림')
+})
+
+test('자외선 지수는 기상청 5단계 기준의 괄호 등급으로 변환한다', () => {
+  assert.equal(getUvIndexLevel(2.8), '낮음')
+  assert.equal(getUvIndexLevel(3), '보통')
+  assert.equal(getUvIndexLevel(6), '높음')
+  assert.equal(getUvIndexLevel(8), '매우높음')
+  assert.equal(getUvIndexLevel(11), '위험')
+  assert.equal(getUvIndexLevel(null), null)
+})
+
+test('PM10은 환경부·에어코리아 예보 등급으로 변환한다', () => {
+  assert.equal(getPm10Level(30), '좋음')
+  assert.equal(getPm10Level(56), '보통')
+  assert.equal(getPm10Level(81), '나쁨')
+  assert.equal(getPm10Level(151), '매우나쁨')
+  assert.equal(getPm10Level(undefined), null)
 })
 
 test('시작 도시 전체 핀은 실제 SVG 세계지도와 같은 전역 투영·cover 좌표를 따른다', () => {
