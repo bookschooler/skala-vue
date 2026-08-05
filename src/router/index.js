@@ -20,6 +20,23 @@ const router = createRouter({
       component: () => import('../views/WeatherForecastView.vue'),
     },
     {
+      path: '/community',
+      name: 'TravelCommunity',
+      component: () => import('../views/CommunityView.vue'),
+    },
+    {
+      path: '/login',
+      name: 'Login',
+      component: () => import('../views/AuthView.vue'),
+      props: { mode: 'login' },
+    },
+    {
+      path: '/join',
+      name: 'Join',
+      component: () => import('../views/AuthView.vue'),
+      props: { mode: 'join' },
+    },
+    {
       path: '/weather/:cityId',
       name: 'WeatherDetail',
       component: () => import('../views/WeatherDetailView.vue'),

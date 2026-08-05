@@ -1,6 +1,8 @@
 // Node.js에 내장된 HTTP 모듈을 가져온다.
 // 별도의 Express 설치 없이 HTTP 서버를 만들 수 있다.
 import http from 'node:http'
+import { getPostCount, resetPosts } from './data/postStore.js'
+import { handlePostRoutes } from './routes/postRoutes.js'
 
 // | Vue 실습     | API 요청                         |
 // | ---------- | ------------------------------ |
@@ -266,6 +268,7 @@ const server = http.createServer(async (request, response) => {
       sendJson(response, 200, {
         status: 'ok',
         productCount: products.length,
+        postCount: getPostCount(),
       })
       return
     }
@@ -279,6 +282,7 @@ const server = http.createServer(async (request, response) => {
       url.pathname === '/api/reset'
     ) {
       products = structuredClone(initialProducts)
+      const posts = resetPosts()
 
       nextProductId =
         Math.max(
@@ -286,11 +290,15 @@ const server = http.createServer(async (request, response) => {
         ) + 1
 
       sendJson(response, 200, {
-        message: '데이터가 초기화되었습니다.',
+        message: '상품과 여행 기록 데이터가 초기화되었습니다.',
         products,
+        posts,
       })
       return
     }
+
+    // Today’s Sky 커뮤니티 API는 수업용 Mock 서버에서 메모리로 유지한다.
+    if (await handlePostRoutes(request, response, url)) return
 
     // ---------------------------------------------------------
     // 3. 상품 목록 조회
