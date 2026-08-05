@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { ArrowLeft, ArrowRight, Location, Search, Star, StarFilled } from '@element-plus/icons-vue'
 import FavoriteMap from '../components/weather/FavoriteMap.vue'
+import UnitToggler from '../components/practices/store_day3_2/UnitToggler.vue'
 import { cityCatalog } from '../data/cityCatalog.js'
 import { getWeatherVisual } from '../utils/weatherVisual.js'
 import bangkokLandmarkUrl from '../../img/city-landmarks/bangkok.png'
@@ -326,14 +327,7 @@ onBeforeUnmount(() => {
         <span>WEATHER</span><strong>FAIRY</strong>
       </RouterLink>
       <div class="header-actions">
-        <button
-          class="unit-toggle"
-          type="button"
-          :aria-label="`온도 단위를 ${configStore.unit === 'celsius' ? '화씨' : '섭씨'}로 변경`"
-          @click="configStore.toggleUnit()"
-        >
-          {{ configStore.unitSymbol }}
-        </button>
+        <UnitToggler compact />
         <button
           class="favorite-toggle"
           type="button"
@@ -541,7 +535,6 @@ onBeforeUnmount(() => {
   letter-spacing: 0.08em;
 }
 
-.unit-toggle,
 .favorite-toggle,
 .search-scope button,
 .strip-control,
@@ -551,19 +544,6 @@ onBeforeUnmount(() => {
   border: 0;
   font: inherit;
   cursor: pointer;
-}
-
-.unit-toggle {
-  display: grid;
-  width: 44px;
-  min-height: 44px;
-  place-items: center;
-  color: #bdeaff;
-  background: #061221;
-  border: 1px solid #285575;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 800;
 }
 
 .favorite-toggle {
