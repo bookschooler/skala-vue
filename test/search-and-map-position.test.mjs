@@ -3,6 +3,7 @@ import test from 'node:test'
 
 import { defaultFavoriteCities } from '../src/data/cityCatalog.js'
 import { getUpcomingHourly, normalizeMeteoHourly } from '../src/services/openMeteoService.js'
+import { normalizeMetNorwayHourly } from '../src/services/metNorwayService.js'
 import { normalizeWeatherStatus, searchCities } from '../src/services/openWeatherService.js'
 import { migrateLegacyDefaultFavorites } from '../src/utils/favoriteMigration.js'
 import {
@@ -70,6 +71,39 @@ test('Open-Meteo 시간별 응답은 1시간 예보와 UV를 정규화한다', (
     precipitation: 0.4,
     wind: 14,
     uvIndex: 3.2,
+    weatherCode: 0,
+    status: '맑음',
+  }])
+})
+
+test('MET Norway 상세 예보는 1시간 간격과 UV를 정규화한다', () => {
+  const forecast = normalizeMetNorwayHourly([
+    {
+      time: '2026-08-05T07:00:00Z',
+      data: {
+        instant: {
+          details: {
+            air_temperature: 30.8,
+            wind_speed: 8,
+            ultraviolet_index_clear_sky: 3.3,
+          },
+        },
+        next_1_hours: {
+          summary: { symbol_code: 'clearsky_day' },
+          details: { precipitation_amount: 0 },
+        },
+      },
+    },
+  ], 'Asia/Seoul')
+
+  assert.deepEqual(forecast, [{
+    dateTime: '2026-08-05T16:00',
+    temp: 30.8,
+    feelsLike: 30.8,
+    precipitationProbability: 0,
+    precipitation: 0,
+    wind: 29,
+    uvIndex: 3.3,
     weatherCode: 0,
     status: '맑음',
   }])
