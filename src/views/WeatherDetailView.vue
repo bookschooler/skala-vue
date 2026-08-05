@@ -357,6 +357,9 @@ onBeforeUnmount(() => {
             </div>
           </article>
         </div>
+        <div class="hourly-scroll-guide" aria-hidden="true">
+          <span></span>
+        </div>
       </section>
 
       <section class="daily-forecast" aria-label="5일 예보">
@@ -658,7 +661,7 @@ dd {
   scroll-snap-type: x mandatory;
   scrollbar-gutter: stable;
   scrollbar-color: #3b9bd0 #07101d;
-  scrollbar-width: thin;
+  scrollbar-width: auto;
   -webkit-overflow-scrolling: touch;
 }
 .hourly-grid::-webkit-scrollbar {
@@ -672,6 +675,24 @@ dd {
   background: linear-gradient(90deg, #287fae, #57c8ff);
   border: 1px solid #9de7ff;
   border-radius: 999px;
+}
+.hourly-scroll-guide {
+  display: block;
+  height: 7px;
+  margin: 2px 2px 0;
+  overflow: hidden;
+  background: #07101d;
+  border: 1px solid rgba(54, 121, 159, 0.6);
+  border-radius: 999px;
+  box-shadow: inset 0 0 6px rgba(22, 109, 157, 0.28);
+}
+.hourly-scroll-guide span {
+  display: block;
+  width: 24%;
+  height: 100%;
+  background: linear-gradient(90deg, #287fae, #57c8ff);
+  border-radius: inherit;
+  box-shadow: 0 0 8px rgba(81, 200, 255, 0.72);
 }
 .hourly-card {
   display: grid;

@@ -1,7 +1,8 @@
 import axios from 'axios'
 
-// Open-Meteo는 16일 전체 예보와 상세 화면의 1시간 예보·UV를 담당한다.
-// 도시 검색·현재 날씨·5일 예보는 openWeatherService.js에서 OpenWeatherMap으로 요청한다.
+// Open-Meteo는 16일 전체 예보만 담당한다.
+// 상세 화면의 1시간 예보·UV는 metNorwayService.js,
+// 도시 검색·현재 날씨·5일 예보는 openWeatherService.js에서 가져온다.
 const forecastClient = axios.create({
   baseURL: 'https://api.open-meteo.com/v1',
   timeout: 10000,
@@ -97,24 +98,32 @@ const normalizeDaily = (daily = {}) => {
   })
 }
 
-const fetchMeteoForecast = async (city, { signal, forecastDays, errorMessage } = {}) => {
+const fetchMeteoForecast = async (
+  city,
+  { signal, forecastDays, errorMessage, includeHourly = true } = {},
+) => {
   assertCoordinates(city)
+  const params = {
+    latitude: city.lat,
+    longitude: city.lon,
+    timezone: 'auto',
+    daily:
+      'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset,uv_index_max',
+    forecast_days: forecastDays,
+  }
+  // 장기 예보 화면에는 시간별 데이터가 전혀 필요 없다. 16일 × 24시간의 불필요한
+  // 응답을 함께 요청하면 공개 API의 사용량만 늘어나므로 상세 예보일 때만 포함한다.
+  if (includeHourly) {
+    params.hourly =
+      'temperature_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,wind_speed_10m,uv_index'
+  }
   const { data } = await forecastClient.get('/forecast', {
-    params: {
-      latitude: city.lat,
-      longitude: city.lon,
-      timezone: 'auto',
-      hourly:
-        'temperature_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,wind_speed_10m,uv_index',
-      daily:
-        'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset,uv_index_max',
-      forecast_days: forecastDays,
-    },
+    params,
     signal,
   })
-  const hourly = normalizeMeteoHourly(data?.hourly)
+  const hourly = includeHourly ? normalizeMeteoHourly(data?.hourly) : []
   const daily = normalizeDaily(data?.daily)
-  if (!hourly.length || !daily.length) throw new Error(errorMessage)
+  if ((includeHourly && !hourly.length) || !daily.length) throw new Error(errorMessage)
 
   return {
     city: { ...city, timezone: data?.timezone ?? city.timezone },
@@ -132,6 +141,7 @@ export const fetchLongRangeForecast = async (city, { signal } = {}) => {
   const forecast = await fetchMeteoForecast(city, {
     signal,
     forecastDays: 16,
+    includeHourly: false,
     errorMessage: 'Open-Meteo 장기 예보 응답 형식이 올바르지 않습니다.',
   })
   longRangeForecastCache.set(cacheKey, { forecast, savedAt: Date.now() })

@@ -52,6 +52,21 @@ test('생소한 국가명도 대표 도시 목록으로 바로 검색된다', as
   )
 })
 
+test('콩고 검색은 중국의 동명 지명이 아닌 두 콩고 국가의 대표 도시를 반환한다', async () => {
+  const cities = await searchCities('콩고', { scope: 'global' })
+
+  assert.deepEqual(
+    cities.map((city) => [city.name, city.countryCode]),
+    [
+      ['킨샤사', 'CD'],
+      ['루붐바시', 'CD'],
+      ['음부지마이', 'CD'],
+      ['브라자빌', 'CG'],
+      ['푸앵트누아르', 'CG'],
+    ],
+  )
+})
+
 test('Open-Meteo 시간별 응답은 1시간 예보와 UV를 정규화한다', () => {
   const forecast = normalizeMeteoHourly({
     time: ['2026-08-05T09:00'],
