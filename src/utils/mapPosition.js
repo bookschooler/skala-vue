@@ -73,3 +73,23 @@ export const toMapViewportPosition = (sourcePosition, viewport) => {
     top: `${top.toFixed(2)}%`,
   }
 }
+
+// 즐겨찾기 표시 토글은 '즐겨찾기' 핀만 제어한다. 검색하거나 클릭해 선택한
+// 도시는 토글 상태와 무관하게 항상 지도에 남겨, 카드만 떠 있고 핀이 없는
+// 상태가 생기지 않게 한다.
+export const getVisibleMapPins = (favorites, selectedCity, showFavoritePins) => {
+  const pins = showFavoritePins ? [...(favorites ?? [])] : []
+
+  if (selectedCity && !pins.some((city) => city?.id === selectedCity.id)) {
+    pins.push(selectedCity)
+  }
+
+  return pins
+}
+
+// 선택 도시는 지도 중앙으로 포커스되므로 카드가 언제나 핀의 오른쪽에 놓인다.
+// 포커스되지 않은 즐겨찾기 미리보기만 화면 바깥을 피하려고 왼쪽 배치를 허용한다.
+export const getMapCardSide = ({ city, selectedCity, isFocused, position }) => {
+  if (isFocused && city?.id === selectedCity?.id) return 'right'
+  return Number.parseFloat(position?.left) > 68 ? 'left' : 'right'
+}

@@ -3,6 +3,8 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { LocationFilled } from '@element-plus/icons-vue'
 import { useConfigStore } from '../../stores/configStore.js'
 import {
+  getMapCardSide,
+  getVisibleMapPins,
   mapCountryBorderPath,
   mapViewBox,
   toMapPosition,
@@ -51,15 +53,17 @@ onBeforeUnmount(() => {
 
 const isSameCity = (first, second) => first?.id && first.id === second?.id
 const mapPositionFor = (city) => toMapViewportPosition(toMapPosition(city), mapViewport.value)
-const cardSideFor = (city) => (Number.parseFloat(mapPositionFor(city).left) > 68 ? 'left' : 'right')
+const cardSideFor = (city) =>
+  getMapCardSide({
+    city,
+    selectedCity: props.selectedCity,
+    isFocused: props.isFocused,
+    position: mapPositionFor(city),
+  })
 
-const visiblePins = computed(() => {
-  // 지도 위 핀은 '즐겨찾기 핀 보기'가 켜진 즐겨찾기 도시에만 한정한다.
-  // 선택 도시는 날씨 카드로는 계속 확인할 수 있지만, 별표를 해제한 순간
-  // 즐겨찾기 목록에서 빠지므로 핀도 같은 렌더 사이클에 사라진다.
-  if (!props.showFavoritePins) return []
-  return props.favorites
-})
+const visiblePins = computed(() =>
+  getVisibleMapPins(props.favorites, props.selectedCity, props.showFavoritePins),
+)
 
 const focusedMapStyle = computed(() => {
   if (!props.isFocused || !props.selectedCity) return {}

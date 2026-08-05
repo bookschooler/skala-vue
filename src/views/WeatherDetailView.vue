@@ -326,7 +326,11 @@ onBeforeUnmount(() => {
           </div>
           <span class="section-meta">{{ hourlyIntervalLabel }}</span>
         </div>
-        <div class="hourly-grid">
+        <div
+          class="hourly-grid"
+          tabindex="0"
+          aria-label="앞으로 24시간 날씨 목록. 좌우로 스크롤해 다음 시간대를 볼 수 있습니다."
+        >
           <article v-for="(hour, index) in upcomingHourly" :key="hour.dateTime" class="hourly-card">
             <span v-if="index === 0" class="hourly-card__now">지금</span>
             <time :datetime="hour.dateTime">{{ formatHour(hour.dateTime) }}</time>
@@ -356,7 +360,9 @@ onBeforeUnmount(() => {
       <section class="daily-forecast" aria-label="5일 예보">
         <div class="section-heading">
           <h2>5일 예보</h2>
-          <RouterLink class="full-forecast-link" :to="forecastRoute">16일 전체 예보 보기</RouterLink>
+          <RouterLink class="full-forecast-link" :to="forecastRoute">
+            <span>16일 전체 예보 보기</span>
+          </RouterLink>
         </div>
         <div class="daily-grid">
           <article v-for="forecast in detailDailyForecast.slice(0, 5)" :key="forecast.date">
@@ -588,18 +594,22 @@ dd {
   font-size: 13px;
 }
 .full-forecast-link {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  min-height: 34px;
-  padding: 0 13px;
-  color: #c6efff;
-  background: linear-gradient(135deg, rgba(14, 74, 118, 0.62), rgba(28, 39, 96, 0.62));
-  border: 1px solid #4ebeff;
-  border-radius: 9px;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 15px;
+  color: #e1f8ff;
+  background:
+    linear-gradient(135deg, rgba(35, 177, 255, 0.2), rgba(83, 75, 255, 0.2)),
+    rgba(5, 22, 49, 0.88);
+  border: 1px solid rgba(91, 203, 255, 0.96);
+  border-radius: 11px;
   box-shadow:
-    0 0 0 1px rgba(70, 180, 255, 0.12) inset,
-    0 0 14px rgba(42, 177, 255, 0.38),
-    0 0 28px rgba(80, 91, 255, 0.16);
+    0 0 0 1px rgba(170, 235, 255, 0.23) inset,
+    0 0 12px rgba(42, 177, 255, 0.52),
+    0 0 28px rgba(80, 91, 255, 0.28);
   font-weight: 800;
   letter-spacing: -0.01em;
   text-decoration: none;
@@ -607,6 +617,14 @@ dd {
     border-color 180ms ease,
     box-shadow 180ms ease,
     transform 180ms ease;
+}
+.full-forecast-link::after {
+  margin-left: 8px;
+  color: #9de7ff;
+  content: '→';
+  font-size: 15px;
+  line-height: 1;
+  text-shadow: 0 0 8px currentColor;
 }
 .full-forecast-link:hover,
 .full-forecast-link:focus-visible {
@@ -633,10 +651,25 @@ dd {
 .hourly-grid {
   display: flex;
   gap: 9px;
-  overflow-x: auto;
-  padding: 2px 2px 10px;
+  overflow-x: scroll;
+  padding: 2px 2px 12px;
   scroll-snap-type: x mandatory;
+  scrollbar-gutter: stable;
   scrollbar-color: #3b9bd0 #07101d;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+.hourly-grid::-webkit-scrollbar {
+  height: 8px;
+}
+.hourly-grid::-webkit-scrollbar-track {
+  background: #07101d;
+  border-radius: 999px;
+}
+.hourly-grid::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, #287fae, #57c8ff);
+  border: 1px solid #9de7ff;
+  border-radius: 999px;
 }
 .hourly-card {
   display: grid;
@@ -644,7 +677,7 @@ dd {
   flex: 0 0 112px;
   justify-items: center;
   gap: 8px;
-  padding: 13px 9px;
+  padding: 30px 9px 13px;
   background: #040b17;
   border: 1px solid #173b59;
   border-radius: 10px;
@@ -653,7 +686,7 @@ dd {
 }
 .hourly-card__now {
   position: absolute;
-  top: -9px;
+  top: 7px;
   padding: 3px 7px;
   color: #dff8ff;
   background: #0e75a9;

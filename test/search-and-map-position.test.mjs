@@ -4,7 +4,13 @@ import test from 'node:test'
 import { defaultFavoriteCities } from '../src/data/cityCatalog.js'
 import { getUpcomingHourly, normalizeMeteoHourly } from '../src/services/openMeteoService.js'
 import { normalizeWeatherStatus, searchCities } from '../src/services/openWeatherService.js'
-import { mapCountries, toMapPosition, toMapViewportPosition } from '../src/utils/mapPosition.js'
+import {
+  getMapCardSide,
+  getVisibleMapPins,
+  mapCountries,
+  toMapPosition,
+  toMapViewportPosition,
+} from '../src/utils/mapPosition.js'
 import {
   getHumidityComfortLevel,
   getPm10Level,
@@ -198,6 +204,28 @@ test('대한민국 윤곽은 SVG에 존재하고, 서울·경주는 한 투영 �
   const gyeongju = toMapPosition({ lat: 35.8562, lon: 129.2247 })
   assert.deepEqual(seoul, { left: '80.71%', top: '24.84%' })
   assert.deepEqual(gyeongju, { left: '81.56%', top: '25.90%' })
+})
+
+test('즐겨찾기가 아닌 검색 도시도 선택되면 핀으로 렌더링된다', () => {
+  const seoul = { id: 'seoul', name: '서울' }
+  const busan = { id: 'busan', name: '부산' }
+
+  assert.deepEqual(getVisibleMapPins([seoul], busan, false), [busan])
+  assert.deepEqual(getVisibleMapPins([seoul], busan, true), [seoul, busan])
+})
+
+test('중앙 포커스된 검색 도시는 원래 경도와 관계없이 카드가 핀 오른쪽에 놓인다', () => {
+  const busan = { id: 'busan', name: '부산' }
+
+  assert.equal(
+    getMapCardSide({
+      city: busan,
+      selectedCity: busan,
+      isFocused: true,
+      position: { left: '81.64%', top: '26.32%' },
+    }),
+    'right',
+  )
 })
 
 test('서울과 상하이도 화면 비율이 달라져도 SVG와 동일한 cover 좌표계를 사용한다', () => {
