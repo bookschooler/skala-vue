@@ -5,7 +5,7 @@ import { RouterLink, RouterView, useRoute } from 'vue-router'
 const route = useRoute()
 
 // 홈은 확정된 전체 지도 레이아웃을 그대로 사용하고,
-// 과제에서 요구한 공통 메뉴는 상세·예보·소개 화면에 제공한다.
+// 공통 메뉴는 지도와 하늘 기록 두 목적지로만 단순화한다.
 const showUtilityNavigation = computed(() => route.name !== 'WeatherHome')
 </script>
 
@@ -15,10 +15,8 @@ const showUtilityNavigation = computed(() => route.name !== 'WeatherHome')
       <RouterLink class="utility-navigation__brand" to="/">WEATHER FAIRY</RouterLink>
 
       <div class="utility-navigation__links" aria-label="페이지 이동">
-        <RouterLink to="/">홈</RouterLink>
-        <RouterLink to="/forecast">장기 예보</RouterLink>
-        <RouterLink to="/community">여행 기록</RouterLink>
-        <RouterLink to="/about">소개</RouterLink>
+        <RouterLink to="/">Home</RouterLink>
+        <RouterLink to="/community">Today’s Sky</RouterLink>
       </div>
 
     </nav>
