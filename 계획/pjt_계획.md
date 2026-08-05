@@ -285,6 +285,7 @@ computed: 선택 도시 · 날짜 · 활동 · 시간대별 필터 · 적합도 
 - [x] OpenWeather 키는 `VITE_OPENWEATHER_API_KEY` 환경 변수에서만 읽도록 구성했다.
 - [x] 세부 요구 문구가 R5의 `UnitToggler`를 중복한 것을 확인하고, 해당 UI 요구는 R5에서 충족했다.
 - [x] OpenWeather 실제 요청·로딩·오류·재시도·요청 취소는 홈·상세에, Open-Meteo 장기 예보 요청은 `/forecast`에 제공한다.
+- [ ] Pages 배포본에서 One Call 1시간 예보·현재 UV가 실제 값으로 표시되는지 재확인한다. 2026-08-05 확인에서는 `OPENWEATHER_API_KEY`가 Current·5일 예보에는 유효하지만 One Call 권한은 없어 상세가 3시간 간격·UV `—`로 대체되었다. OpenWeather 계정에서 One Call 구독을 활성화한 뒤 다시 검증한다.
 
 ### R7. Element Plus - 228페이지
 
