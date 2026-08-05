@@ -21,11 +21,11 @@
 | R2 | 126 | Composition API - `ref`, `computed`, `watch`, `watchEffect`, 검색 결과 상태 | 코드 보존 완료 |
 | R3 | 158 | 4개 컴포넌트 분리, Props/Emits/Slot/Scoped CSS | 코드 보존 완료 |
 | R4 | 176 | Router, 지연 로딩, 동적 상세, 404, 소개 화면 | 공통 메뉴·상세·404까지 브라우저 재검증 완료 |
-| R5 | 191 | Pinia 단위 Store와 전역 단위 전환 | 공통 메뉴의 `UnitToggler`와 모든 온도 표기 연동 확인 |
+| R5 | 191 | Pinia 단위 Store와 전역 단위 전환 | 홈 상단 제어 영역의 `UnitToggler`와 모든 온도 표기 연동 확인 |
 | R6 | 209 | Axios·OpenWeather 준비 | Axios·키 환경 변수 준비 완료. 세부 요구 문구는 R5를 중복함 |
 | R7 | 228 | 3일차 과제에 Element Plus 적용 | 코드 반영 완료 |
 | R8 | 250 | 메뉴와 활용 API를 추가해 과제 확장 | OpenWeather 검색·현재·5일 예보와 `/forecast`의 Open-Meteo 장기 예보를 브라우저에서 확인함 |
-| R9 | 274 | ESLint, 환경 변수·Git 제외, `dist` GitHub Pages 배포 | 로컬 구성 완료, 실제 Pages 배포 확인 필요 |
+| R9 | 274 | ESLint, 환경 변수·Git 제외, `dist` GitHub Pages 배포 | GitHub Actions 성공 및 실제 Pages 동작 확인 완료 |
 
 ## 2. PDF 필수 요구사항
 
@@ -98,9 +98,9 @@
 | `src/components/practices/composition/WeatherComposition_day2.vue` | `computed`·`watch`·`watchEffect` 실습 보존 | R2 |
 | `src/components/practices/components_day2_1/` | 부모·Slot·검색·카드의 4개 컴포넌트 실습 보존 | R3 |
 | `src/main.js` | Pinia, Router, Element Plus 전역 등록 | R4, R5, R7 |
-| `src/App.vue` | 상세·예보·소개 화면의 공통 RouterLink 메뉴, `RouterView`, `UnitToggler` | R4, R5, R8 |
+| `src/App.vue` | 상세·예보·소개 화면의 공통 RouterLink 메뉴, `RouterView` | R4, R8 |
 | `src/router/index.js` | Hash Router, Lazy Loading, 동적 상세, 404, 예보 경로 | R4, R8, R9 |
-| `src/views/WeatherHomeView.vue` | 국내/해외 검색, 현재 날씨, 지도 이동·핀, 즐겨찾기, 재시도 상태 | R1, R2, R4, R5, R6, R7 |
+| `src/views/WeatherHomeView.vue` | 국내/해외 검색, 현재 날씨, 지도 이동·핀, 즐겨찾기, 상단 단위 전환, 재시도 상태 | R1, R2, R4, R5, R6, R7 |
 | `src/views/WeatherDetailView.vue` | 좌표/도시 ID 기반 상세 날씨, 5일 예보, 단위·즐겨찾기 전환 | R4, R5, R6, R7 |
 | `src/views/WeatherForecastView.vue` | 즐겨찾기 도시 선택, 최대 16일 예보, 요청 취소·오류·빈 상태 | R5, R7, R8 |
 | `src/services/openMeteoService.js` | Axios 16일 일별·시간별·UV 응답 정규화 | R8 |
@@ -247,7 +247,7 @@ computed: 선택 도시 · 날짜 · 활동 · 시간대별 필터 · 적합도 
 ### R5. Pinia - 191페이지
 
 - [x] `configStore`가 `unit`, `unitSymbol`, `toggleUnit`을 제공한다.
-- [x] `UnitToggler`가 공통 헤더 메뉴 옆에 있다.
+- [x] `UnitToggler`가 향후 내비게이션이 확장될 홈 상단 제어 영역에 있고, 즐겨찾기 핀 토글과 나란히 배치된다.
 - [x] 홈 카드와 상세 화면이 동일한 Store 값에 따라 ℃/℉로 전환된다.
 - [x] 홈에서 화씨로 바꾼 뒤 예보로 이동해 16일 카드가 ℉로 유지되는 것을 확인했고, 상세 화면에서도 ℃/℉ 전환과 5일 예보를 확인했다.
 
@@ -280,12 +280,12 @@ computed: 선택 도시 · 날짜 · 활동 · 시간대별 필터 · 적합도 
 - [x] `npm run lint`가 Oxlint와 ESLint를 함께 실행하도록 구성되어 있으며 최근 통과했다.
 - [x] `npm run build`, `npm run build:staging`, `npm run build:production`이 최근 통과했다.
 - [x] API 키는 `import.meta.env.VITE_OPENWEATHER_API_KEY`로 읽고, `.env.local`은 `*.local` 규칙으로 Git 제외된다.
-- [x] `.env.example`에는 빈 키 이름만 두고, Actions는 `${{ secrets.VITE_OPENWEATHER_API_KEY }}`를 사용한다.
+- [x] 앱은 Vite 공개 환경 변수 `VITE_OPENWEATHER_API_KEY`만 읽는다. Actions는 비공개 Secret `OPENWEATHER_API_KEY`를 이 변수로 주입해, Secret 값과 번들 변수의 역할을 분리한다.
 - [x] `.env.staging`·`.env.production`의 환경 표시값을 실제 용도에 맞게 `VITE_APP_ENV`로 정정했다.
 - [x] `deploy-pages.yml`에 `npm ci` → lint → production build → artifact → deploy 순서가 있다.
-- [ ] GitHub 저장소 Actions Secret `VITE_OPENWEATHER_API_KEY`를 등록한다.
-- [ ] GitHub Pages Source를 `GitHub Actions`로 선택한다.
-- [ ] `main` push 또는 수동 실행 후 Actions 성공 로그와 실제 Pages URL에서 홈·상세·예보를 확인한다.
+- [x] GitHub 저장소 Actions Secret `OPENWEATHER_API_KEY`를 등록하고, 빌드 환경의 `VITE_OPENWEATHER_API_KEY`로 주입한다.
+- [x] GitHub Pages Source를 `GitHub Actions`로 설정했다.
+- [x] `main` push 후 Actions 성공 로그와 실제 Pages URL에서 홈·상세·예보·404를 확인했다. 배포 주소: `https://bookschooler.github.io/skala-vue/`
 
 ### 최종 프로젝트 개선 체크리스트 - R1~R9과 함께 최종 제출 전 완료
 
