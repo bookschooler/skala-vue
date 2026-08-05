@@ -63,8 +63,9 @@ const focusedMapStyle = computed(() => {
   const zoom = 1.22
   const leftValue = Number.parseFloat(left)
   const topValue = Number.parseFloat(top)
-  // 선택 카드가 항상 핀의 오른쪽에 놓일 자리를 남긴다.
-  const pinFocusX = 36
+  // 선택한 도시의 핀을 지도 뷰포트의 정중앙으로 맞춘다.
+  // 날씨 카드는 이 핀의 오른쪽에 별도 레이어로 배치한다.
+  const pinFocusX = 50
   const pinFocusY = 50
 
   return {
@@ -215,7 +216,8 @@ const pinLabel = (city) => `${city.name} ${city.condition} ${displayPinTemperatu
 }
 
 .map-pin--selected {
-  z-index: 3;
+  /* 선택 카드보다 앞에 두어 핀이 카드에 가려지지 않게 한다. */
+  z-index: 5;
   color: #66d9ff;
   filter: drop-shadow(0 0 10px rgba(64, 213, 255, 0.98));
 }
