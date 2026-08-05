@@ -16,12 +16,16 @@ const ensureSeedPosts = () => {
   return listSeedPosts()
 }
 
-// GitHub Pages는 Node Mock API를 실행할 수 없으므로, 연결 자체가 불가능한 경우에만
-// 2번에서 쓰던 초기 게시글을 브라우저 메모리로 대체한다. API 검증 오류는 그대로 표시한다.
+const isStaticPages = () =>
+  typeof window !== 'undefined' && window.location.hostname.endsWith('github.io')
+
+// GitHub Pages는 Node Mock API를 실행할 수 없으므로 즉시 브라우저 메모리의
+// 초기 게시글을 쓰고, 로컬에서는 연결 불가·서버 오류일 때만 대체한다.
 const canUseSeedFallback = (error) => !error?.cause?.response || error.cause.response.status >= 500
 
 export const communityPostApi = {
   async getAll(params = {}) {
+    if (isStaticPages()) return ensureSeedPosts()
     try {
       const response = await communityHttp.get('/posts', { params })
       return response.data
@@ -32,6 +36,10 @@ export const communityPostApi = {
   },
 
   async create(post) {
+    if (isStaticPages()) {
+      ensureSeedPosts()
+      return createSeedPost(post)
+    }
     try {
       const response = await communityHttp.post('/posts', post)
       return response.data
@@ -43,6 +51,12 @@ export const communityPostApi = {
   },
 
   async createComment(postId, comment) {
+    if (isStaticPages()) {
+      ensureSeedPosts()
+      const created = createSeedComment(postId, comment)
+      if (!created) throw new Error('게시글을 찾을 수 없습니다.')
+      return created
+    }
     try {
       const response = await communityHttp.post(`/posts/${postId}/comments`, comment)
       return response.data
