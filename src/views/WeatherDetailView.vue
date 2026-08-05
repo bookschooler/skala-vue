@@ -404,7 +404,7 @@ onBeforeUnmount(() => {
 .detail-page {
   width: min(1020px, calc(100% - 32px));
   min-height: 100vh;
-  padding: 42px 0 70px;
+  padding: 98px 0 70px;
   margin: 0 auto;
   color: #e8f6ff;
 }
@@ -830,7 +830,7 @@ dd {
 @media (max-width: 720px) {
   .detail-page {
     width: calc(100% - 24px);
-    padding-top: 24px;
+    padding-top: 82px;
   }
   .detail-card {
     padding: 22px 16px;

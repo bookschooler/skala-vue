@@ -51,11 +51,17 @@ input {
 .utility-navigation {
   display: flex;
   align-items: center;
-  gap: 28px;
-  width: min(1120px, calc(100% - 32px));
-  min-height: 68px;
-  margin: 0 auto;
+  justify-content: space-between;
+  gap: 16px;
+  position: fixed;
+  z-index: 20;
+  top: 0;
+  left: 0;
+  width: 100%;
+  min-height: 64px;
+  padding: 0 clamp(16px, 3vw, 34px);
   color: #dbe8ff;
+  pointer-events: none;
 }
 
 .utility-navigation__brand {
@@ -65,12 +71,15 @@ input {
   letter-spacing: 0.16em;
   text-decoration: none;
   white-space: nowrap;
+  pointer-events: auto;
+  text-shadow: 0 0 14px rgba(104, 213, 255, 0.34);
 }
 
 .utility-navigation__links {
   display: flex;
   align-items: center;
   gap: 6px;
+  pointer-events: auto;
 }
 
 .utility-navigation__links a {
@@ -92,15 +101,14 @@ input {
 
 @media (max-width: 720px) {
   .utility-navigation {
-    flex-wrap: wrap;
-    gap: 10px 16px;
-    width: calc(100% - 24px);
-    padding: 14px 0;
+    min-height: 56px;
+    padding: 0 12px;
   }
 
   .utility-navigation__links {
-    order: 3;
-    width: 100%;
+    gap: 0;
   }
+
+  .utility-navigation__links a { padding: 7px 8px; font-size: 13px; }
 }
 </style>

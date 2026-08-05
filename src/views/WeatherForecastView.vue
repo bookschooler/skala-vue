@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { ArrowLeft, Sunny, Umbrella } from '@element-plus/icons-vue'
 import { findCityById } from '../data/cityCatalog.js'
 import { fetchLongRangeForecast, isMeteoRequestCanceled } from '../services/openMeteoService.js'
@@ -9,6 +9,7 @@ import { useFavoriteStore } from '../stores/favoriteStore.js'
 import { getWeatherVisual } from '../utils/weatherVisual.js'
 
 const route = useRoute()
+const router = useRouter()
 const configStore = useConfigStore()
 const favoriteStore = useFavoriteStore()
 const forecastData = ref(null)
@@ -36,6 +37,33 @@ const queryCity = computed(() => {
 const selectedCity = computed(
   () => queryCity.value ?? favoriteStore.cities[0] ?? findCityById('city_01') ?? null,
 )
+const detailRoute = computed(() => {
+  const city = selectedCity.value
+  if (!city) return { name: 'WeatherHome' }
+
+  return {
+    name: 'WeatherDetail',
+    params: { cityId: city.id },
+    query: {
+      name: city.name,
+      country: city.country,
+      countryCode: city.countryCode,
+      lat: String(city.lat),
+      lon: String(city.lon),
+      timezone: city.timezone,
+    },
+  }
+})
+
+const goBack = () => {
+  // 상세보기에서 넘어온 정상 흐름이면 실제 브라우저 히스토리로 돌아간다.
+  // 새 탭/직접 주소 입력처럼 이전 앱 화면이 없을 때만 같은 도시 상세보기로 보완한다.
+  if (window.history.state?.back) {
+    router.back()
+    return
+  }
+  router.push(detailRoute.value)
+}
 
 const displayTemp = (temp) => {
   if (!Number.isFinite(Number(temp))) return '—'
@@ -99,7 +127,9 @@ onBeforeUnmount(() => {
 
 <template>
   <main class="forecast-page">
-    <RouterLink class="back-link" to="/"><el-icon><ArrowLeft /></el-icon> 홈으로</RouterLink>
+    <button class="back-link" type="button" @click="goBack">
+      <el-icon><ArrowLeft /></el-icon> 뒤로가기
+    </button>
     <header class="forecast-hero">
       <div>
         <p class="eyebrow">16 DAY FORECAST</p>
@@ -161,8 +191,9 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.forecast-page { width: min(1180px, calc(100% - 32px)); min-height: 100vh; padding: 42px 0 70px; margin: 0 auto; color: #eaf7ff; }
-.back-link { display: inline-flex; align-items: center; gap: 6px; color: #a8d9f2; font-size: 14px; text-decoration: none; }
+.forecast-page { width: min(1180px, calc(100% - 32px)); min-height: 100vh; padding: 98px 0 70px; margin: 0 auto; color: #eaf7ff; }
+.back-link { display: inline-flex; align-items: center; gap: 6px; padding: 0; color: #a8d9f2; background: transparent; border: 0; cursor: pointer; font: inherit; font-size: 14px; text-decoration: none; }
+.back-link:hover, .back-link:focus-visible { color: #e8faff; outline: 0; }
 .forecast-hero { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin: 27px 0 24px; }
 .eyebrow { margin: 0; color: #7fd6ff; font-size: 11px; font-weight: 800; letter-spacing: 0.14em; }
 .forecast-hero h1 { margin: 5px 0 8px; font-size: clamp(30px, 5vw, 46px); }
@@ -197,5 +228,5 @@ onBeforeUnmount(() => {
 .calendar-card__metrics { display: grid; gap: 4px; align-self: end; }
 .calendar-card__metrics small { display: inline-flex; align-items: center; gap: 4px; color: #96b5c6; font-size: 11px; }
 .calendar-card__metrics :deep(.el-icon) { color: #8ed8f6; font-size: 13px; }
-@media (max-width: 560px) { .forecast-page { width: calc(100% - 24px); padding-top: 24px; } .forecast-hero { gap: 12px; } .unit-toggle { width: 40px; height: 40px; } .forecast-calendar { padding: 12px; } }
+@media (max-width: 560px) { .forecast-page { width: calc(100% - 24px); padding-top: 82px; } .forecast-hero { gap: 12px; } .unit-toggle { width: 40px; height: 40px; } .forecast-calendar { padding: 12px; } }
 </style>
