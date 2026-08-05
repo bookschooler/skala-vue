@@ -63,6 +63,13 @@ export const normalizeMeteoHourly = (hourly = {}) => {
   }))
 }
 
+// 도시의 현재 시각 이후 항목만 잘라 상세 화면의 24시간 가로 예보에 사용한다.
+// Open-Meteo의 로컬 시간 문자열(YYYY-MM-DDTHH:mm)은 문자열 비교로도 시간순을 보장한다.
+export const getUpcomingHourly = (hourly, startDateTime, count = 24) =>
+  (Array.isArray(hourly) ? hourly : [])
+    .filter((item) => item?.dateTime >= startDateTime)
+    .slice(0, count)
+
 const normalizeDaily = (daily = {}) => {
   const time = Array.isArray(daily.time) ? daily.time : []
   return time.flatMap((date, index) => {

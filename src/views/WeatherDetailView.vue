@@ -13,10 +13,15 @@ import {
   WindPower,
 } from '@element-plus/icons-vue'
 import { findCityById } from '../data/cityCatalog.js'
-import { fetchDetailHourlyForecast, isMeteoRequestCanceled } from '../services/openMeteoService.js'
+import {
+  fetchDetailHourlyForecast,
+  getUpcomingHourly,
+  isMeteoRequestCanceled,
+} from '../services/openMeteoService.js'
 import { fetchWeatherBundle, isWeatherRequestCanceled } from '../services/openWeatherService.js'
 import { useConfigStore } from '../stores/configStore.js'
 import { useFavoriteStore } from '../stores/favoriteStore.js'
+import { getPm10Level, getUvIndexLevel } from '../utils/weatherIndexLevel.js'
 import { getWeatherVisual } from '../utils/weatherVisual.js'
 
 const route = useRoute()
@@ -73,15 +78,15 @@ const getCityTimeParts = (timeZone) => {
   }
 }
 
-const todayHourly = computed(() => {
+const upcomingHourly = computed(() => {
   const forecast = hourlyForecast.value
-  const today = getCityTimeParts(forecast?.city?.timezone).date
-  if (!today) return []
-  return (forecast?.hourly ?? [])
-    .filter((hour) => hour.dateTime.startsWith(today))
-    .slice(0, 24)
+  const { date, hour } = getCityTimeParts(forecast?.city?.timezone)
+  const startDateTime = `${date}T${String(hour).padStart(2, '0')}:00`
+  return getUpcomingHourly(forecast?.hourly, startDateTime)
 })
-const hourlyIntervalLabel = computed(() => (todayHourly.value.length ? '1시간 간격' : ''))
+const hourlyIntervalLabel = computed(() =>
+  upcomingHourly.value.length ? `1시간 간격 · ${upcomingHourly.value.length}시간` : '',
+)
 const currentUvIndex = computed(() => {
   const forecast = hourlyForecast.value
   if (!forecast) return null
@@ -115,6 +120,16 @@ const displayUv = (value) =>
   value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value))
     ? Number(value).toFixed(1).replace(/\.0$/, '')
     : '—'
+
+const displayUvWithLevel = (value) => {
+  const level = getUvIndexLevel(value)
+  return level ? `${displayUv(value)} (${level})` : displayUv(value)
+}
+
+const displayParticulateWithLevel = (value) => {
+  const level = getPm10Level(value)
+  return level ? `${displayParticulate(value)} (${level})` : displayParticulate(value)
+}
 
 const forecastRoute = computed(() => {
   const city = weatherBundle.value?.city ?? resolvedCity.value
@@ -274,29 +289,36 @@ onBeforeUnmount(() => {
           </div>
           <div>
             <dt>
-              <el-icon><Filter /></el-icon> 미세먼지
+              <el-icon><Filter /></el-icon> 미세먼지(PM10)
+              <small class="metric-agency">환경부 기준</small>
             </dt>
-            <dd>{{ displayParticulate(currentWeather.airQuality?.pm10) }}</dd>
+            <dd>{{ displayParticulateWithLevel(currentWeather.airQuality?.pm10) }}</dd>
           </div>
           <div>
             <dt>
               <el-icon><Sunny /></el-icon> 자외선 지수
+              <small class="metric-agency">기상청 기준</small>
             </dt>
-            <dd>{{ displayUv(currentUvIndex) }}</dd>
+            <dd>{{ displayUvWithLevel(currentUvIndex) }}</dd>
           </div>
         </dl>
       </section>
 
-      <section v-if="todayHourly.length" class="hourly-forecast" :aria-label="`오늘 ${hourlyIntervalLabel} 예보`">
+      <section
+        v-if="upcomingHourly.length"
+        class="hourly-forecast"
+        :aria-label="`앞으로 ${hourlyIntervalLabel} 예보`"
+      >
         <div class="section-heading">
           <div>
             <p class="section-eyebrow">HOURLY OUTLOOK</p>
-            <h2>오늘 시간대별 날씨</h2>
+            <h2>앞으로 24시간 날씨</h2>
           </div>
           <span class="section-meta">{{ hourlyIntervalLabel }}</span>
         </div>
         <div class="hourly-grid">
-          <article v-for="hour in todayHourly" :key="hour.dateTime" class="hourly-card">
+          <article v-for="(hour, index) in upcomingHourly" :key="hour.dateTime" class="hourly-card">
+            <span v-if="index === 0" class="hourly-card__now">지금</span>
             <time :datetime="hour.dateTime">{{ formatHour(hour.dateTime) }}</time>
             <el-icon
               :class="[
@@ -346,7 +368,7 @@ onBeforeUnmount(() => {
                 ><el-icon><Umbrella /></el-icon> {{ forecast.precipitationProbability }}%</small
               >
               <small
-                ><el-icon><Sunny /></el-icon> UV {{ displayUv(forecast.uvIndexMax) }}</small
+                ><el-icon><Sunny /></el-icon> UV {{ displayUvWithLevel(forecast.uvIndexMax) }}</small
               >
             </div>
           </article>
@@ -530,6 +552,11 @@ dt :deep(.el-icon) {
   font-size: 24px;
   filter: drop-shadow(0 0 5px rgba(93, 215, 255, 0.3));
 }
+.metric-agency {
+  color: #6e96aa;
+  font-size: 10px;
+  font-weight: 600;
+}
 dd {
   margin: 6px 0 0;
   font-size: 18px;
@@ -562,21 +589,37 @@ dd {
   font-size: 12px;
 }
 .hourly-grid {
-  display: grid;
-  grid-template-columns: repeat(8, minmax(104px, 1fr));
+  display: flex;
   gap: 9px;
   overflow-x: auto;
+  padding: 2px 2px 10px;
+  scroll-snap-type: x mandatory;
+  scrollbar-color: #3b9bd0 #07101d;
 }
 .hourly-card {
   display: grid;
+  position: relative;
+  flex: 0 0 112px;
   justify-items: center;
   gap: 8px;
-  min-width: 104px;
   padding: 13px 9px;
   background: #040b17;
   border: 1px solid #173b59;
   border-radius: 10px;
+  scroll-snap-align: start;
   text-align: center;
+}
+.hourly-card__now {
+  position: absolute;
+  top: -9px;
+  padding: 3px 7px;
+  color: #dff8ff;
+  background: #0e75a9;
+  border: 1px solid #69d9ff;
+  border-radius: 999px;
+  box-shadow: 0 0 10px rgba(48, 194, 255, 0.55);
+  font-size: 10px;
+  font-weight: 800;
 }
 .hourly-card time {
   color: #a9c2d0;
@@ -725,7 +768,7 @@ dd {
     grid-template-columns: repeat(2, 1fr);
   }
   .hourly-grid {
-    grid-template-columns: repeat(8, minmax(104px, 1fr));
+    padding-bottom: 10px;
   }
   .daily-grid {
     grid-template-columns: repeat(5, minmax(112px, 1fr));
