@@ -90,6 +90,7 @@ const commentInput = ref(null)
 const tagQuery = ref('')
 const commentDraft = ref('')
 const commentError = ref('')
+const cloudPreviewImages = []
 
 const createEmptyDraft = () => ({
   type: 'tip',
@@ -166,6 +167,23 @@ function getProfileImage(name) {
 
 function getCloudPreviewUrl(imageUrl) {
   return assetUrl(imageUrl.replace(/\.png$/, '-thumb.png'))
+}
+
+function showCloudHelp(id) {
+  activeCloudHelp.value = id
+}
+
+function hideCloudHelp(id) {
+  if (activeCloudHelp.value === id) activeCloudHelp.value = ''
+}
+
+function preloadCloudPreviews() {
+  cloudTypes.forEach((cloud) => {
+    const image = new Image()
+    image.decoding = 'async'
+    image.src = getCloudPreviewUrl(cloud.imageUrl)
+    cloudPreviewImages.push(image)
+  })
 }
 
 function toggleDraftSkyColor(color) {
@@ -405,6 +423,7 @@ function formatCapturedAt(value) {
 
 onMounted(() => {
   void communityPostStore.fetchPosts()
+  preloadCloudPreviews()
 })
 </script>
 
@@ -461,11 +480,11 @@ onMounted(() => {
           <section v-for="group in cloudGroups" :key="group.id" class="cloud-group">
             <p><b>{{ group.label }}</b><span>{{ group.altitude }}</span></p>
             <div>
-              <div v-for="cloud in group.types" :key="cloud.id" class="cloud-type-option">
+              <div v-for="cloud in group.types" :key="cloud.id" class="cloud-type-option" @mouseenter="showCloudHelp(cloud.id)" @mouseleave="hideCloudHelp(cloud.id)">
                 <button type="button" :class="{ selected: filterState.cloudType === cloud.id }" @click="selectFilter('cloudType', cloud.id)">
                   {{ cloud.label }} <small>({{ cloud.alias }}) · {{ cloud.code }}</small>
                 </button>
-                <button class="cloud-info-button" type="button" :aria-label="`${cloud.label} 설명 보기`" @mouseenter="activeCloudHelp = cloud.id" @mouseleave="activeCloudHelp = ''" @focus="activeCloudHelp = cloud.id" @blur="activeCloudHelp = ''" @click="activeCloudHelp = cloud.id">
+                <button class="cloud-info-button" type="button" :aria-label="`${cloud.label} 설명 보기`" @focus="showCloudHelp(cloud.id)" @blur="hideCloudHelp(cloud.id)" @click.stop="showCloudHelp(cloud.id)">
                   <el-icon><InfoFilled /></el-icon>
                 </button>
                 <aside v-if="activeCloudHelp === cloud.id" class="cloud-tooltip" role="tooltip">
@@ -639,9 +658,9 @@ onMounted(() => {
             <section v-for="group in cloudGroups" :key="group.id">
               <p><b>{{ group.label }}</b><span>{{ group.altitude }}</span></p>
               <div>
-                <div v-for="cloud in group.types" :key="cloud.id" class="taxonomy-choice">
+                <div v-for="cloud in group.types" :key="cloud.id" class="taxonomy-choice" @mouseenter="showCloudHelp(cloud.id)" @mouseleave="hideCloudHelp(cloud.id)">
                   <label :class="{ active: draft.cloudType === cloud.id }"><input v-model="draft.cloudType" type="radio" :value="cloud.id" /><b>{{ cloud.label }}</b><small>({{ cloud.alias }}) · {{ cloud.code }}</small></label>
-                  <button class="cloud-info-button" type="button" :aria-label="`${cloud.label} 설명 보기`" @mouseenter="activeCloudHelp = cloud.id" @mouseleave="activeCloudHelp = ''" @focus="activeCloudHelp = cloud.id" @blur="activeCloudHelp = ''" @click="activeCloudHelp = cloud.id"><el-icon><InfoFilled /></el-icon></button>
+                  <button class="cloud-info-button" type="button" :aria-label="`${cloud.label} 설명 보기`" @focus="showCloudHelp(cloud.id)" @blur="hideCloudHelp(cloud.id)" @click.stop="showCloudHelp(cloud.id)"><el-icon><InfoFilled /></el-icon></button>
                   <aside v-if="activeCloudHelp === cloud.id" class="cloud-tooltip cloud-tooltip--composer" role="tooltip">
                     <img :src="getCloudPreviewUrl(cloud.imageUrl)" :alt="`${cloud.label} 대표 모습`" />
                     <strong>{{ cloud.label }} <small>({{ cloud.alias }}) · {{ cloud.code }}</small></strong>
@@ -735,9 +754,9 @@ onMounted(() => {
 .post-tags span, .detail-tags span { overflow: hidden; max-width: 120px; padding: 4px 6px; color: #9bd8f4; background: #0c2940; border: 1px solid #205778; border-radius: 5px; font-size: 10px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
 .sky-color-tag { display: inline-flex; align-items: center; gap: 4px; }
 .sky-color-tag i, .selected-color i { width: 9px; height: 9px; flex: 0 0 auto; border: 1px solid rgba(235, 250, 255, .8); border-radius: 50%; }
-.card-hashtags { display: flex; flex-wrap: wrap; gap: 5px; padding: 0 10px 10px; }
+.card-hashtags { display: flex; width: 100%; flex-wrap: wrap; gap: 5px; padding: 0 10px 10px; }
 .card-hashtags button, .detail-hashtags button, .hashtag-preview span { padding: 4px 6px; color: #91d5f5; background: rgba(25, 91, 126, .22); border: 1px solid #245c7e; border-radius: 5px; font: inherit; font-size: 10px; font-weight: 800; }
-.card-hashtags button, .detail-hashtags button { cursor: pointer; }
+.card-hashtags button, .detail-hashtags button { max-width: 100%; overflow-wrap: anywhere; white-space: normal; cursor: pointer; text-align: left; }
 .card-hashtags button:hover, .card-hashtags button:focus-visible, .detail-hashtags button:hover, .detail-hashtags button:focus-visible { color: #e9fbff; background: #164b6a; border-color: #5fcffb; outline: none; }
 .post-actions { display: flex; align-items: center; gap: 3px; }
 .post-actions button { display: inline-flex; align-items: center; gap: 3px; min-height: 29px; padding: 0 4px; color: #8eaebe; background: transparent; border: 0; cursor: pointer; font: inherit; font-size: 12px; }
