@@ -100,7 +100,21 @@ const currentUvIndex = computed(() => {
   if (!forecast) return null
   const { date, hour } = getCityTimeParts(forecast.city.timezone)
   const currentDateTime = `${date}T${String(hour).padStart(2, '0')}:00`
-  return forecast.hourly.find((item) => item.dateTime === currentDateTime)?.uvIndex ?? null
+  const exact = forecast.hourly.find((item) => item.dateTime === currentDateTime)
+  if (exact && Number.isFinite(Number(exact.uvIndex))) return Number(exact.uvIndex)
+
+  // API가 현재 시각 직전/직후의 정시 데이터를 반환하는 경우에도 UV를 비워 두지
+  // 않는다. 특히 방콕처럼 시차가 있는 도시에서는 브라우저 시각과 예보 시각이
+  // 한 시간 어긋날 수 있다. 0은 야간의 정상적인 UV 값이므로 null과 구분한다.
+  const targetMs = Date.parse(currentDateTime)
+  const nearest = forecast.hourly
+    .filter((item) => Number.isFinite(Number(item?.uvIndex)) && item?.dateTime)
+    .sort(
+      (first, second) =>
+        Math.abs(Date.parse(first.dateTime) - targetMs) -
+        Math.abs(Date.parse(second.dateTime) - targetMs),
+    )[0]
+  return nearest ? Number(nearest.uvIndex) : null
 })
 const detailDailyForecast = computed(() => {
   const uvByDate = new Map((hourlyForecast.value?.daily ?? []).map((item) => [item.date, item.uvIndexMax]))
