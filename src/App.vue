@@ -184,8 +184,6 @@ input {
   padding-right: max(20px, calc((100vw - 1320px) / 2));
   padding-left: max(20px, calc((100vw - 1320px) / 2));
   background: linear-gradient(180deg, rgba(2, 10, 22, 0.97), rgba(2, 10, 22, 0.87));
-  border-bottom: 1px solid rgba(74, 158, 203, 0.3);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
   backdrop-filter: blur(10px);
 }
 
