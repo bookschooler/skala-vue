@@ -372,7 +372,10 @@ onBeforeUnmount(() => {
           @compositionend="finishSearchComposition"
         />
       </form>
-      <div v-if="searchState !== 'idle' || searchMessage" class="search-feedback">
+      <div v-if="searchQuery.trim() || searchState !== 'idle' || searchMessage" class="search-feedback">
+        <p v-if="searchQuery.trim()" class="search-query" aria-live="polite">
+          검색 중인 도시: <strong>{{ searchQuery.trim() }}</strong>
+        </p>
         <p v-if="searchState === 'loading'" class="search-message">도시를 찾고 있어요.</p>
         <p v-else-if="searchMessage" class="search-message" aria-live="polite">{{ searchMessage }}</p>
         <ul v-if="searchResults.length" class="search-results" aria-label="도시 검색 결과">
@@ -649,6 +652,17 @@ onBeforeUnmount(() => {
   margin: 0 2px 7px;
   color: #9fb6c6;
   font-size: 12px;
+}
+
+.search-query {
+  margin: 0 2px 7px;
+  color: #aebfcd;
+  font-size: 12px;
+}
+
+.search-query strong {
+  color: #e7f8ff;
+  font-weight: 800;
 }
 
 .search-results {
