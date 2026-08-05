@@ -64,6 +64,8 @@ const resolvedCity = computed(
 const currentWeather = computed(() => weatherBundle.value?.current ?? null)
 const isFavorite = computed(() => favoriteStore.isFavorite(resolvedCity.value?.id))
 const weatherVisual = (weatherCode) => getWeatherVisual(weatherCode)
+const hourlySource = computed(() => hourlyForecast.value ?? weatherBundle.value)
+const hourlyIntervalHours = computed(() => hourlySource.value?.hourlyIntervalHours ?? 1)
 
 const getCityTimeParts = (timeZone) => {
   try {
@@ -83,13 +85,19 @@ const getCityTimeParts = (timeZone) => {
 }
 
 const upcomingHourly = computed(() => {
-  const forecast = hourlyForecast.value
+  const forecast = hourlySource.value
   const { date, hour } = getCityTimeParts(forecast?.city?.timezone)
   const startDateTime = `${date}T${String(hour).padStart(2, '0')}:00`
-  return getUpcomingHourly(forecast?.hourly, startDateTime)
+  return getUpcomingHourly(
+    forecast?.hourly,
+    startDateTime,
+    Math.ceil(24 / hourlyIntervalHours.value),
+  )
 })
 const hourlyIntervalLabel = computed(() =>
-  upcomingHourly.value.length ? `1시간 간격 · ${upcomingHourly.value.length}시간` : '',
+  upcomingHourly.value.length
+    ? `${hourlyIntervalHours.value}시간 간격 · 앞으로 24시간`
+    : '',
 )
 const currentUvIndex = computed(() => {
   const forecast = hourlyForecast.value
@@ -180,13 +188,17 @@ const loadWeather = async () => {
   activeController = new AbortController()
   isLoading.value = true
   try {
-    const [weatherResult, hourlyResult] = await Promise.all([
+    const [weatherResult, hourlyResult] = await Promise.allSettled([
       fetchWeatherBundle(city, { signal: activeController.signal }),
       fetchDetailHourlyForecast(city, { signal: activeController.signal }),
     ])
     if (currentRequestId === requestId) {
-      weatherBundle.value = weatherResult
-      hourlyForecast.value = hourlyResult
+      // Open-Meteo의 일시적인 429/네트워크 실패가 OpenWeather 현재 날씨와
+      // 상세 카드 전체를 막지 않도록, 1시간 예보만 3시간 보조 예보로 대체한다.
+      // 서비스가 정상일 때는 기존대로 Open-Meteo의 1시간·UV 데이터를 우선한다.
+      if (weatherResult.status !== 'fulfilled') throw weatherResult.reason
+      weatherBundle.value = weatherResult.value
+      hourlyForecast.value = hourlyResult.status === 'fulfilled' ? hourlyResult.value : null
     }
   } catch (error) {
     if (currentRequestId !== requestId || isWeatherRequestCanceled(error) || isMeteoRequestCanceled(error)) return
