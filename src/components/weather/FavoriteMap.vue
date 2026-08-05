@@ -1,9 +1,14 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { LocationFilled } from '@element-plus/icons-vue'
-import cyberWorldMapUrl from '../../../img/weather-fairy-cyber-world-map-seamless.png'
 import { useConfigStore } from '../../stores/configStore.js'
-import { toMapPosition, toMapViewportPosition } from '../../utils/mapPosition.js'
+import {
+  mapCountries,
+  mapGraticulePath,
+  mapViewBox,
+  toMapPosition,
+  toMapViewportPosition,
+} from '../../utils/mapPosition.js'
 
 const props = defineProps({
   favorites: {
@@ -95,11 +100,40 @@ const pinLabel = (city) => `${city.name} ${city.condition} ${displayPinTemperatu
         :class="{ 'favorite-map__world--focused': isFocused }"
         :style="focusedMapStyle"
       >
-        <img
-          class="favorite-map__image"
-          :src="cyberWorldMapUrl"
-          alt="청록 네온 국가 윤곽의 세계 지도"
-        />
+        <svg
+          class="favorite-map__svg"
+          :viewBox="`0 0 ${mapViewBox.width} ${mapViewBox.height}`"
+          preserveAspectRatio="xMidYMid slice"
+          role="img"
+          aria-label="청록 네온 국가 윤곽의 세계 지도"
+        >
+          <defs>
+            <radialGradient id="map-ocean-glow" cx="50%" cy="44%" r="72%">
+              <stop offset="0%" stop-color="#093466" stop-opacity="0.42" />
+              <stop offset="55%" stop-color="#03142e" stop-opacity="0.24" />
+              <stop offset="100%" stop-color="#020611" stop-opacity="0" />
+            </radialGradient>
+            <filter id="map-neon-glow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="1.1" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#map-ocean-glow)" />
+          <path class="favorite-map__graticule" :d="mapGraticulePath" />
+          <g class="favorite-map__countries" filter="url(#map-neon-glow)">
+            <path
+              v-for="country in mapCountries"
+              :key="country.id"
+              class="favorite-map__country"
+              :data-country-id="country.id"
+              :data-country-name="country.name"
+              :d="country.path"
+            />
+          </g>
+        </svg>
         <button
           v-for="city in visiblePins"
           :key="city.id"
@@ -153,14 +187,29 @@ const pinLabel = (city) => `${city.name} ${city.condition} ${displayPinTemperatu
   will-change: transform;
 }
 
-.favorite-map__image {
+.favorite-map__svg {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  filter: brightness(1.22) contrast(1.06) saturate(1.12);
-  mix-blend-mode: screen;
   user-select: none;
+}
+
+.favorite-map__graticule {
+  fill: none;
+  stroke: rgba(58, 143, 219, 0.25);
+  stroke-width: 0.62;
+  vector-effect: non-scaling-stroke;
+}
+
+.favorite-map__countries {
+  fill: rgba(10, 67, 116, 0.28);
+  stroke: rgba(86, 188, 255, 0.93);
+  stroke-width: 0.82;
+  vector-effect: non-scaling-stroke;
+}
+
+.favorite-map__country {
+  transition: fill 180ms ease;
 }
 
 .map-pin {
@@ -226,8 +275,5 @@ const pinLabel = (city) => `${city.name} ${city.condition} ${displayPinTemperatu
     aspect-ratio: 1.4 / 1;
   }
 
-  .favorite-map__image {
-    object-fit: cover;
-  }
 }
 </style>
